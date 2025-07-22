@@ -11,11 +11,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,7 +32,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api/superadmin/admins")
 @CrossOrigin(origins = "*")
-@PreAuthorize("hasRole('super_admin')")
+@PreAuthorize("hasAuthority('super_admin')")
 @Tag(name = "SuperAdmin Admin Management", description = "API untuk manajemen admin oleh super admin")
 public class AdminManagementController {
     
@@ -42,7 +42,7 @@ public class AdminManagementController {
     private AdminManagementService adminManagementService;
     
     @GetMapping
-    @PreAuthorize("hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('super_admin')")
     @Operation(summary = "Mendapatkan daftar admin", 
                description = "Endpoint untuk mendapatkan daftar semua admin")
     public ResponseEntity<?> getAllAdmins() {
@@ -58,7 +58,7 @@ public class AdminManagementController {
     }
     
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('super_admin')")
     @Operation(summary = "Mendapatkan detail admin", 
                description = "Endpoint untuk mendapatkan detail admin berdasarkan ID")
     public ResponseEntity<?> getAdminById(
@@ -84,7 +84,7 @@ public class AdminManagementController {
     }
     
     @PostMapping
-    @PreAuthorize("hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('super_admin')")
     @Operation(summary = "Membuat admin baru", 
                description = "Endpoint untuk membuat admin baru oleh super admin")
     public ResponseEntity<?> createAdmin(@RequestBody AdminCreateRequest request) {
@@ -106,7 +106,7 @@ public class AdminManagementController {
     }
 
     @GetMapping("/count")
-    @PreAuthorize("hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('super_admin')")
     @Operation(summary = "Mendapatkan jumlah admin", 
                description = "Endpoint untuk mendapatkan jumlah admin yang terdaftar dalam sistem")
     public ResponseEntity<?> getAdminCount() {
@@ -128,7 +128,7 @@ public class AdminManagementController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('super_admin')")
     @Operation(summary = "Mengubah data admin", 
                description = "Endpoint untuk mengubah data admin berdasarkan ID")
     public ResponseEntity<?> updateAdmin(
@@ -160,7 +160,7 @@ public class AdminManagementController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('super_admin')")
     @Operation(summary = "Menghapus admin", 
                description = "Endpoint untuk menghapus admin berdasarkan ID")
     public ResponseEntity<?> deleteAdmin(

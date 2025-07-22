@@ -1,11 +1,11 @@
 package com.example.e_presensi.admin.service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap; // Import untuk HashMap
 import java.util.List;
+import java.util.Map; // Import untuk Map
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.Map; // Import untuk Map
-import java.util.HashMap; // Import untuk HashMap
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,13 +14,16 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.e_presensi.admin.dto.PasswordChangeRequest;
 import com.example.e_presensi.admin.dto.UserCreateRequest;
 import com.example.e_presensi.admin.dto.UserResponse;
 import com.example.e_presensi.admin.dto.UserUpdateRequest;
+import com.example.e_presensi.login.dto.ProfilePhotoResponse;
 import com.example.e_presensi.login.model.Login;
 import com.example.e_presensi.login.model.UserProfile;
 import com.example.e_presensi.login.repository.LoginRepository;
 import com.example.e_presensi.login.repository.UserProfileRepository;
+import com.example.e_presensi.login.service.ProfilePhotoService;
 
 @Service
 public class UserManagementService {
@@ -32,6 +35,9 @@ public class UserManagementService {
     
     @Autowired
     private LoginRepository loginRepository;
+    
+    @Autowired
+    private ProfilePhotoService profilePhotoService;
     
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     
@@ -82,10 +88,10 @@ public class UserManagementService {
         userProfile.setFirstname(request.getFirstname());
         userProfile.setLastname(request.getLastname());
         userProfile.setEmail(request.getEmail());
-        userProfile.setRole("user"); // Default role
+        userProfile.setRole("user"); // Default role - lowercase
         userProfile.setTipeUser(request.getTipeUser());
         userProfile.setBidangKerja(request.getBidangKerja());
-        userProfile.setStatus(request.getStatus()); // Tambahkan baris ini untuk mengatur status
+        userProfile.setStatus(request.getStatus());
         userProfile.setCreateAt(LocalDateTime.now());
         
         UserProfile savedProfile = userProfileRepository.save(userProfile);
@@ -95,20 +101,47 @@ public class UserManagementService {
         login.setUsername(request.getUsername());
         login.setEmail(request.getEmail());
         login.setPassword(passwordEncoder.encode(request.getPassword()));
-        login.setRole("USER"); // Default role
+        login.setRole("user"); // Konsisten dengan UserProfile - lowercase
         login.setUserProfile(savedProfile);
         login.setCreateAt(LocalDateTime.now());
         
         loginRepository.save(login);
         
-        logger.info("User baru berhasil dibuat dengan email: {}", request.getEmail());
+        logger.info("User baru berhasil dibuat dengan email: {} dan role: {}", request.getEmail(), "user");
         
         return mapToUserResponse(savedProfile);
     }
     
+    public String getUserPhotoUrl(Integer idUser) {
+        logger.info("Mendapatkan URL foto profil untuk user ID: {}", idUser);
+        
+        try {
+            ProfilePhotoResponse photoResponse = profilePhotoService.getProfilePhoto(idUser);
+            
+            if (photoResponse == null) {
+                logger.warn("User dengan ID {} tidak ditemukan", idUser);
+                return null;
+            }
+            
+            return photoResponse.getFotoProfileUrl();
+            
+        } catch (Exception e) {
+            logger.error("Error saat mendapatkan URL foto profil untuk user ID: {}", idUser, e);
+            return null;
+        }
+    }
+    
     private UserResponse mapToUserResponse(UserProfile userProfile) {
-        // Hapus baris ini karena variabel request tidak ada dalam metode ini
-        // userProfile.setStatus(request.getStatus());
+        // Dapatkan URL foto profil
+        String fotoProfileUrl = null;
+        try {
+            ProfilePhotoResponse photoResponse = profilePhotoService.getProfilePhoto(userProfile.getId_user());
+            if (photoResponse != null) {
+                fotoProfileUrl = photoResponse.getFotoProfileUrl();
+            }
+        } catch (Exception e) {
+            logger.warn("Gagal mendapatkan URL foto profil untuk user ID: {}", userProfile.getId_user(), e);
+        }
         
         return UserResponse.builder()
                 .idUser(userProfile.getId_user())
@@ -122,6 +155,7 @@ public class UserManagementService {
                 .bidangKerja(userProfile.getBidangKerja())
                 .alamat(userProfile.getAlamat())
                 .phoneNumber(userProfile.getPhoneNumber())
+                .fotoProfile(fotoProfileUrl)
                 .createdAt(userProfile.getCreateAt())
                 .updatedAt(userProfile.getUpdateAt())
                 .build();
@@ -274,5 +308,58 @@ public class UserManagementService {
                           userProfileRepository.countByTipeUser("Karyawan"));
         
         return result;
+    }
+    
+    /**
+     * Mengubah password user dari sisi admin
+     * 
+     * @param idUser ID pengguna yang passwordnya akan diubah
+     * @param request Request berisi password baru dan konfirmasi
+     * @return true jika berhasil, false jika user tidak ditemukan
+     */
+    @Transactional
+    public boolean changeUserPassword(Integer idUser, PasswordChangeRequest request) {
+        logger.info("Mengubah password untuk user ID: {}", idUser);
+        
+        // Validasi input
+        if (request.getNewPassword() == null || request.getNewPassword().isEmpty()) {
+            throw new IllegalArgumentException("Password baru tidak boleh kosong");
+        }
+        
+        if (request.getNewPassword().length() < 6) {
+            throw new IllegalArgumentException("Password minimal 6 karakter");
+        }
+        
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new IllegalArgumentException("Password dan konfirmasi password tidak cocok");
+        }
+        
+        // Cari user profile
+        Optional<UserProfile> userOpt = userProfileRepository.findById(idUser);
+        if (!userOpt.isPresent()) {
+            logger.warn("User dengan ID {} tidak ditemukan", idUser);
+            return false;
+        }
+        
+        UserProfile userProfile = userOpt.get();
+        
+        // Cari data login berdasarkan email user
+        Optional<Login> loginOpt = loginRepository.findByEmail(userProfile.getEmail());
+        if (!loginOpt.isPresent()) {
+            logger.warn("Data login untuk user dengan ID {} tidak ditemukan", idUser);
+            return false;
+        }
+        
+        Login login = loginOpt.get();
+        
+        // Enkripsi password baru
+        String encodedPassword = passwordEncoder.encode(request.getNewPassword());
+        
+        // Update password di tabel login
+        login.setPassword(encodedPassword);
+        loginRepository.save(login);
+        
+        logger.info("Password untuk user ID {} berhasil diubah", idUser);
+        return true;
     }
 }

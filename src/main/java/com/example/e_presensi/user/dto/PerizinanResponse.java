@@ -20,7 +20,7 @@ public class PerizinanResponse {
     private LocalDate tanggalSelesai;
     private String keterangan;
     private String status;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private LocalDateTime createAt;
     private String namaUser;
+    private String lampiran;
 }

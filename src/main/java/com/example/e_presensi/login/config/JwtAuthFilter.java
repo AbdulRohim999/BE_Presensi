@@ -5,6 +5,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.Optional;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,102 +40,73 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                   HttpServletResponse response, 
                                   FilterChain filterChain) throws ServletException, IOException {
         
-        String path = request.getServletPath();
-        logger.info("Request path: {}", path);
-        
-        // Allow OPTIONS requests for CORS
-        if (request.getMethod().equals("OPTIONS")) {
-            logger.info("Permintaan OPTIONS diteruskan");
-            filterChain.doFilter(request, response);
-            return;
-        }
-        
-        // Check if path is public
-        if (path.contains("/api/auth") || 
-            path.contains("/swagger-ui") ||
-            path.contains("/v3/api-docs")) {
-            logger.info("Path publik diteruskan: {}", path);
+        // --- Pemeriksaan Awal ---
+        if (isPublicPath(request.getServletPath()) || "OPTIONS".equals(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Validate token
-        String authHeader = request.getHeader("Authorization");
-        logger.info("Authorization header: {}", authHeader);
-        
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            logger.info("Token diterima: {}", token);
-            
-            try {
-                // Validasi token terlebih dahulu
-                boolean isValid = jwtUtil.validateToken(token);
-                logger.info("Token valid: {}", isValid);
-                
-                if (isValid) {
-                    // Extract email from token
-                    String email = jwtUtil.getEmailFromToken(token);
-                    logger.info("Email dari token: {}", email);
-                    
-                    if (email != null) {
-                        // Cari user profile berdasarkan email
-                        logger.info("Mencari user dengan email: {}", email);
-                        Optional<UserProfile> userProfileOpt = userProfileRepository.findByEmail(email);
-                        logger.info("Hasil pencarian user: {}", userProfileOpt.isPresent() ? "Ditemukan" : "Tidak ditemukan");
-                        
-                        if (userProfileOpt.isPresent()) {
-                            UserProfile userProfile = userProfileOpt.get();
-                            logger.info("User ditemukan: {} {} dengan role: {}", 
-                                userProfile.getFirstname(), 
-                                userProfile.getLastname(), 
-                                userProfile.getRole());
-                            
-                            // Tambahkan ID user ke request attribute untuk digunakan di controller
-                            request.setAttribute("userId", userProfile.getId_user());
-                            logger.info("ID User yang diset: {}", userProfile.getId_user());
-                            
-                            // Pastikan role tidak null dan tidak kosong
-                            String role = userProfile.getRole();
-                            if (role == null || role.isEmpty()) {
-                                role = "user"; // Default role jika kosong
-                                logger.warn("Role kosong, menggunakan default role: user");
-                            }
-                            
-                            // Gunakan role langsung tanpa prefix ROLE_ dan tanpa mengubah ke uppercase
-                            logger.info("Authority yang diberikan: {}", role);
-                            
-                            // Create authentication object and set in SecurityContext
-                            UsernamePasswordAuthenticationToken authentication = 
-                                new UsernamePasswordAuthenticationToken(
-                                    email, null, Collections.singletonList(new SimpleGrantedAuthority(role)));
-                            
-                            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                            SecurityContextHolder.getContext().setAuthentication(authentication);
-                            logger.info("Authentication berhasil diset di SecurityContext");
-                            
-                            filterChain.doFilter(request, response);
-                            return;
-                        } else {
-                            logger.warn("User profile tidak ditemukan untuk email: {}", email);
-                        }
-                    } else {
-                        logger.warn("Email tidak dapat diekstrak dari token");
-                    }
-                } else {
-                    logger.warn("Token tidak valid");
-                }
-            } catch (Exception e) {
-                logger.error("Error saat memproses token: {}", e.getMessage(), e);
-            }
-        } else {
-            logger.warn("Authorization header tidak valid atau tidak ada");
+        final String authHeader = request.getHeader("Authorization");
+        final String jwt;
+        final String userEmail;
+
+        if (StringUtils.isBlank(authHeader) || !authHeader.startsWith("Bearer ")) {
+            logger.warn("Authorization header tidak valid atau tidak ada.");
+            sendUnauthorizedResponse(response, "Authorization header tidak valid atau tidak ada.");
+            return;
+        }
+
+        jwt = authHeader.substring(7);
+        try {
+            userEmail = jwtUtil.getEmailFromToken(jwt);
+        } catch (Exception e) {
+            logger.error("Gagal mengekstrak email dari token.", e);
+            sendUnauthorizedResponse(response, "Token tidak valid.");
+            return;
         }
         
-        // Jika sampai di sini, berarti autentikasi gagal
-        logger.warn("Autentikasi gagal, mengirim response 401");
-        response.setContentType("application/json");
+        // --- Jika email ada dan belum ada autentikasi ---
+        if (StringUtils.isNotBlank(userEmail) && SecurityContextHolder.getContext().getAuthentication() == null) {
+            Optional<UserProfile> userProfileOpt = userProfileRepository.findByEmail(userEmail);
+            
+            if (userProfileOpt.isPresent() && jwtUtil.validateToken(jwt)) {
+                UserProfile userProfile = userProfileOpt.get();
+                String role = StringUtils.isNotBlank(userProfile.getRole()) ? userProfile.getRole().toLowerCase().trim() : "user";
+
+                // Set user ID in request attribute
+                request.setAttribute("userId", userProfile.getId_user());
+
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userEmail,
+                        null,
+                        Collections.singletonList(new SimpleGrantedAuthority(role))
+                );
+                
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+                logger.info("User '{}' dengan role '{}' berhasil diautentikasi.", userEmail, role);
+            } else {
+                logger.warn("User tidak ditemukan atau token tidak valid untuk email: {}", userEmail);
+            }
+        }
+        
+        filterChain.doFilter(request, response);
+    }
+    
+    private boolean isPublicPath(String path) {
+        return path.contains("/api/auth") || 
+               path.contains("/swagger-ui") ||
+               path.contains("/v3/api-docs") ||
+               path.contains("/swagger-resources") ||
+               path.contains("/webjars");
+    }
+    
+    private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+        logger.warn("Mengirim response 401: {}", message);
+        response.setContentType("application/json;charset=UTF-8");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.getWriter().write("{\"message\": \"Unauthorized: Token tidak valid atau tidak ada\"}");
+        response.getWriter().write("{\"message\": \"" + message + "\"}");
+        response.getWriter().flush();
     }
     
     /**

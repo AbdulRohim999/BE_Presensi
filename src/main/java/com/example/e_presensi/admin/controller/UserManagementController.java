@@ -19,10 +19,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.e_presensi.admin.dto.PasswordChangeRequest;
 import com.example.e_presensi.admin.dto.UserCreateRequest;
 import com.example.e_presensi.admin.dto.UserResponse;
 import com.example.e_presensi.admin.dto.UserUpdateRequest;
 import com.example.e_presensi.admin.service.UserManagementService;
+import com.example.e_presensi.login.dto.ProfilePhotoResponse;
+import com.example.e_presensi.login.service.ProfilePhotoService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -38,6 +41,9 @@ public class UserManagementController {
     
     @Autowired
     private UserManagementService userManagementService;
+    
+    @Autowired
+    private ProfilePhotoService profilePhotoService;
     
     @GetMapping
     @Operation(summary = "Mendapatkan daftar pengguna", 
@@ -137,7 +143,7 @@ public class UserManagementController {
     }
     
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('super_admin')")
+    @PreAuthorize("hasAnyAuthority('super_admin', 'admin')")
     @Operation(summary = "Menghapus data pengguna", 
                description = "Endpoint untuk menghapus data pengguna berdasarkan ID")
     public ResponseEntity<?> deleteUser(
@@ -211,6 +217,100 @@ public class UserManagementController {
             logger.error("Error saat mendapatkan total user untuk semua tipe_user", e);
             Map<String, String> error = new HashMap<>();
             error.put("message", "Terjadi kesalahan saat mendapatkan total user");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+    
+    @GetMapping("/{id}/foto")
+    @Operation(summary = "Mendapatkan foto profil pengguna", 
+               description = "Endpoint untuk mendapatkan foto profil pengguna berdasarkan ID")
+    public ResponseEntity<?> getUserPhoto(
+            @Parameter(description = "ID pengguna", required = true) 
+            @PathVariable("id") Integer idUser) {
+        
+        try {
+            String fotoUrl = userManagementService.getUserPhotoUrl(idUser);
+            
+            if (fotoUrl == null || fotoUrl.isEmpty()) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Foto profil tidak ditemukan");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("fotoUrl", fotoUrl);
+            response.put("message", "Foto profil berhasil ditemukan");
+            
+            logger.info("Berhasil mendapatkan foto profil untuk user ID: {}", idUser);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("Error saat mendapatkan foto profil user", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Terjadi kesalahan saat mendapatkan foto profil");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+    
+    @GetMapping("/{id}/foto-detail")
+    @Operation(summary = "Mendapatkan detail foto profil pengguna", 
+               description = "Endpoint untuk mendapatkan detail foto profil pengguna beserta informasi user")
+    public ResponseEntity<?> getUserPhotoDetail(
+            @Parameter(description = "ID pengguna", required = true) 
+            @PathVariable("id") Integer idUser) {
+        
+        try {
+            ProfilePhotoResponse photoResponse = profilePhotoService.getProfilePhoto(idUser);
+            
+            if (photoResponse == null) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Foto profil tidak ditemukan");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
+            
+            logger.info("Berhasil mendapatkan detail foto profil untuk user ID: {}", idUser);
+            return ResponseEntity.ok(photoResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error saat mendapatkan detail foto profil user", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Terjadi kesalahan saat mendapatkan detail foto profil");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+    
+    @PutMapping("/{id}/password")
+    @Operation(summary = "Mengubah password pengguna", 
+               description = "Endpoint untuk admin mengubah password pengguna berdasarkan ID")
+    public ResponseEntity<?> changeUserPassword(
+            @Parameter(description = "ID pengguna", required = true) 
+            @PathVariable("id") Integer idUser,
+            @RequestBody PasswordChangeRequest request) {
+        
+        try {
+            boolean isChanged = userManagementService.changeUserPassword(idUser, request);
+            
+            if (!isChanged) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Pengguna tidak ditemukan");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
+            
+            logger.info("Berhasil mengubah password untuk user ID: {}", idUser);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Password berhasil diubah");
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.error("Error validasi saat mengubah password", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        } catch (Exception e) {
+            logger.error("Error saat mengubah password", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Terjadi kesalahan saat mengubah password");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }

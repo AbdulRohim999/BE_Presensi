@@ -3,15 +3,11 @@ package com.example.e_presensi.user.model;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import com.example.e_presensi.login.model.UserProfile;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -33,43 +29,41 @@ public class Perizinan {
     @Column(name = "id_perizinan")
     private Integer idPerizinan;
     
-    @ManyToOne
-    @JoinColumn(name = "id_user", nullable = false)
-    private UserProfile userProfile;
+    @Column(name = "id_user", nullable = false)
+    private Integer idUser;
     
-    @Column(nullable = false)
+    @Column(name = "jenis_izin", nullable = false)
     private String jenisIzin;
     
-    @Column(nullable = false)
-    private String keterangan;
-    
-    @Column(nullable = false)
+    @Column(name = "tanggal_mulai", nullable = false)
     private LocalDate tanggalMulai;
     
-    @Column(nullable = false)
+    @Column(name = "tanggal_selesai", nullable = false)
     private LocalDate tanggalSelesai;
     
-    @Column(nullable = false)
+    @Column(name = "keterangan", nullable = false)
+    private String keterangan;
+    
+    @Column(name = "status", nullable = false)
     private String status;
     
-    // Menghapus field lampiran
-    // @Column
-    // private String lampiran;
-    
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "create_at", nullable = false)
+    private LocalDateTime createAt;
     
     @Column(name = "update_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private LocalDateTime updateAt;
+    
+    @Column(name = "lampiran")
+    private String lampiran;
     
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createAt = LocalDateTime.now();
+        updateAt = LocalDateTime.now();
     }
     
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updateAt = LocalDateTime.now();
     }
 }

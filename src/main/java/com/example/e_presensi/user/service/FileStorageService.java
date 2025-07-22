@@ -2,6 +2,7 @@ package com.example.e_presensi.user.service;
 
 import java.io.InputStream;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,9 +12,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import io.minio.GetObjectArgs;
+import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
+import io.minio.http.Method;
 
 @Service
 public class FileStorageService {
@@ -54,7 +57,17 @@ public class FileStorageService {
                     .build());
             
             logger.info("File berhasil diupload: {}", objectName);
-            return objectName;
+
+            // Generate URL presigned untuk akses file
+            String url = minioClient.getPresignedObjectUrl(
+                GetPresignedObjectUrlArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectName)
+                    .method(Method.GET)
+                    .expiry(7, TimeUnit.DAYS) // URL berlaku selama 7 hari
+                    .build());
+
+            return url;
             
         } catch (Exception e) {
             logger.error("Error saat upload file", e);

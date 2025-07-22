@@ -1,7 +1,6 @@
 package com.example.e_presensi.user.service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
@@ -12,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.e_presensi.login.model.UserProfile;
 import com.example.e_presensi.login.repository.UserProfileRepository;
@@ -31,9 +31,8 @@ public class PerizinanService {
     @Autowired
     private UserProfileRepository userProfileRepository;
     
-    // Hapus referensi ke FileStorageService
-    // @Autowired
-    // private FileStorageService fileStorageService;
+    @Autowired
+    private FileStorageService fileStorageService;
     
     public List<PerizinanResponse> getAllPerizinan() {
         List<Perizinan> perizinanList = perizinanRepository.findAll();
@@ -44,23 +43,34 @@ public class PerizinanService {
     
     @Transactional
     public PerizinanResponse createPerizinan(Integer idUser, PerizinanRequest request) {
+        logger.info("Membuat perizinan untuk user ID: {}", idUser);
+        
         try {
             // Validasi tanggal
             LocalDate tanggalMulai = LocalDate.parse(request.getTanggalMulai(), DateTimeFormatter.ISO_DATE);
             LocalDate tanggalSelesai = LocalDate.parse(request.getTanggalSelesai(), DateTimeFormatter.ISO_DATE);
             
+            logger.info("Tanggal mulai: {}, Tanggal selesai: {}", tanggalMulai, tanggalSelesai);
+            
             if (tanggalMulai.isAfter(tanggalSelesai)) {
+                logger.warn("Tanggal mulai setelah tanggal selesai");
                 throw new IllegalArgumentException("Tanggal mulai harus sebelum tanggal selesai");
             }
             
-            // Cari user profile
+            // Cari user profile untuk validasi
             UserProfile userProfile = userProfileRepository.findById(idUser)
-                    .orElseThrow(() -> new IllegalArgumentException("User tidak ditemukan"));
+                    .orElseThrow(() -> {
+                        logger.error("User tidak ditemukan dengan ID: {}", idUser);
+                        return new IllegalArgumentException("User tidak ditemukan");
+                    });
+            
+            logger.info("User ditemukan: {} {} dengan role: {}", 
+                       userProfile.getFirstname(), userProfile.getLastname(), userProfile.getRole());
             
             // Cek apakah sudah ada perizinan yang overlap
-            boolean hasOverlap = perizinanRepository.existsByUserProfileAndStatusAndTanggalMulaiBetweenOrTanggalSelesaiBetween(
-                userProfile,
-                "pending",
+            boolean hasOverlap = perizinanRepository.existsByIdUserAndStatusAndTanggalMulaiBetweenOrTanggalSelesaiBetween(
+                idUser,
+                "Menunggu",
                 tanggalMulai,
                 tanggalSelesai,
                 tanggalMulai,
@@ -68,29 +78,29 @@ public class PerizinanService {
             );
             
             if (hasOverlap) {
+                logger.warn("Sudah ada perizinan yang overlap untuk user ID: {}", idUser);
                 throw new IllegalArgumentException("Sudah ada perizinan yang overlap dengan tanggal yang dipilih");
             }
             
             // Buat objek perizinan
             Perizinan perizinan = Perizinan.builder()
-                .userProfile(userProfile)
-                .jenisIzin(request.getJenisPerizinan())
-                .keterangan(request.getAlasan())
+                .idUser(idUser)
+                .jenisIzin(request.getJenisIzin())
+                .keterangan(request.getKeterangan())
                 .tanggalMulai(tanggalMulai)
                 .tanggalSelesai(tanggalSelesai)
-                .status("pending")
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .status("Menunggu")
                 .build();
             
             // Simpan ke database
             Perizinan savedPerizinan = perizinanRepository.save(perizinan);
-            logger.info("Perizinan berhasil dibuat untuk user ID: {}", idUser);
+            logger.info("Perizinan berhasil dibuat untuk user ID: {} dengan ID perizinan: {}", 
+                       idUser, savedPerizinan.getIdPerizinan());
             
             return mapToResponse(savedPerizinan);
             
         } catch (Exception e) {
-            logger.error("Error saat membuat perizinan", e);
+            logger.error("Error saat membuat perizinan untuk user ID: {}", idUser, e);
             throw new RuntimeException("Gagal membuat perizinan: " + e.getMessage());
         }
     }
@@ -114,11 +124,11 @@ public class PerizinanService {
     public PerizinanResponse ajukanIzin(Integer idUser, PerizinanRequest request) {
         try {
             // Validasi jenis izin
-            if (request.getJenisPerizinan() == null || request.getJenisPerizinan().trim().isEmpty()) {
+            if (request.getJenisIzin() == null || request.getJenisIzin().trim().isEmpty()) {
                 throw new IllegalArgumentException("Jenis izin tidak boleh kosong");
             }
             
-            String jenisIzin = request.getJenisPerizinan().toLowerCase().trim();
+            String jenisIzin = request.getJenisIzin().toLowerCase().trim();
             if (!jenisIzin.equals("sakit") && !jenisIzin.equals("izin") && !jenisIzin.equals("cuti")) {
                 throw new IllegalArgumentException("Jenis izin hanya boleh: sakit, izin, atau cuti");
             }
@@ -131,13 +141,13 @@ public class PerizinanService {
                 throw new IllegalArgumentException("Tanggal mulai tidak boleh setelah tanggal selesai");
             }
             
-            // Cari user profile
+            // Cari user profile untuk validasi
             UserProfile userProfile = userProfileRepository.findById(idUser)
                     .orElseThrow(() -> new IllegalArgumentException("User tidak ditemukan"));
             
             // Cek apakah user sudah memiliki izin aktif pada rentang tanggal yang sama
-            boolean izinExists = perizinanRepository.existsByUserProfileAndStatusAndTanggalMulaiBetweenOrTanggalSelesaiBetween(
-                    userProfile, "Diterima",
+            boolean izinExists = perizinanRepository.existsByIdUserAndStatusAndTanggalMulaiBetweenOrTanggalSelesaiBetween(
+                    idUser, "Diterima",
                     tanggalMulai, tanggalSelesai,
                     tanggalMulai, tanggalSelesai);
             
@@ -147,14 +157,12 @@ public class PerizinanService {
             
             // Buat objek perizinan baru
             Perizinan perizinan = Perizinan.builder()
-                    .userProfile(userProfile)
+                    .idUser(idUser)
                     .jenisIzin(jenisIzin)
                     .tanggalMulai(tanggalMulai)
                     .tanggalSelesai(tanggalSelesai)
-                    .keterangan(request.getAlasan())
+                    .keterangan(request.getKeterangan())
                     .status("Menunggu")
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
                     .build();
             
             // Simpan ke database
@@ -175,7 +183,7 @@ public class PerizinanService {
             throw new IllegalArgumentException("User tidak ditemukan");
         }
         
-        List<Perizinan> perizinanList = perizinanRepository.findByUserProfile(userProfileOpt.get());
+        List<Perizinan> perizinanList = perizinanRepository.findByIdUser(idUser);
         return perizinanList.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -213,20 +221,48 @@ public class PerizinanService {
         return null;
     }
     
+    @Transactional
+    public PerizinanResponse createPerizinanWithLampiran(Integer idUser, PerizinanRequest request, MultipartFile lampiran) {
+        LocalDate tanggalMulai = LocalDate.parse(request.getTanggalMulai());
+        LocalDate tanggalSelesai = LocalDate.parse(request.getTanggalSelesai());
+        String lampiranPath = null;
+        if (lampiran != null && !lampiran.isEmpty()) {
+            lampiranPath = fileStorageService.uploadFile(lampiran, "lampiran-perizinan/" + idUser);
+        }
+        Perizinan perizinan = Perizinan.builder()
+            .idUser(idUser)
+            .jenisIzin(request.getJenisIzin())
+            .keterangan(request.getKeterangan())
+            .tanggalMulai(tanggalMulai)
+            .tanggalSelesai(tanggalSelesai)
+            .status("Menunggu")
+            .lampiran(lampiranPath)
+            .build();
+        Perizinan saved = perizinanRepository.save(perizinan);
+        return mapToResponse(saved);
+    }
+    
     private PerizinanResponse mapToResponse(Perizinan perizinan) {
-        UserProfile userProfile = perizinan.getUserProfile();
+        // Cari user profile berdasarkan idUser
+        UserProfile userProfile = userProfileRepository.findById(perizinan.getIdUser())
+                .orElse(null);
+        
+        String namaUser = "Unknown User";
+        if (userProfile != null) {
+            namaUser = userProfile.getFirstname() + " " + userProfile.getLastname();
+        }
         
         return PerizinanResponse.builder()
                 .idPerizinan(perizinan.getIdPerizinan())
-                .idUser(userProfile.getId_user())
+                .idUser(perizinan.getIdUser())
                 .jenisIzin(perizinan.getJenisIzin())
                 .tanggalMulai(perizinan.getTanggalMulai())
                 .tanggalSelesai(perizinan.getTanggalSelesai())
                 .keterangan(perizinan.getKeterangan())
                 .status(perizinan.getStatus())
-                .createdAt(perizinan.getCreatedAt())
-                .updatedAt(perizinan.getUpdatedAt())
-                .namaUser(userProfile.getFirstname() + " " + userProfile.getLastname())
+                .createAt(perizinan.getCreateAt())
+                .namaUser(namaUser)
+                .lampiran(perizinan.getLampiran())
                 .build();
     }
 }

@@ -23,6 +23,7 @@ public class UserResponse {
     private String bidangKerja;
     private String alamat;
     private String phoneNumber;
+    private String fotoProfile;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

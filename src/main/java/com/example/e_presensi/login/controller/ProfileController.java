@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,7 +31,6 @@ import com.example.e_presensi.login.service.ProfilePhotoService;
 import com.example.e_presensi.login.service.ProfileService;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -163,7 +162,7 @@ public class ProfileController {
         }
     }
     
-    @PutMapping(value = "/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/photo", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_OCTET_STREAM_VALUE })
     @Operation(summary = "Memperbarui foto profil pengguna", 
                description = "Endpoint untuk memperbarui foto profil pengguna yang sedang login")
     @ApiResponses(value = {
@@ -175,26 +174,16 @@ public class ProfileController {
         @ApiResponse(responseCode = "500", description = "Terjadi kesalahan server")
     })
     public ResponseEntity<?> updateProfilePhoto(
-        @RequestPart("file")
-        @Parameter(
-            description = "File foto profil yang akan diupload (format: JPG, JPEG, PNG, maksimal 5MB)", 
-            required = true, 
-            content = @Content(mediaType = "multipart/form-data",
-                    schema = @Schema(type = "string", format = "binary"))
-        ) 
-        MultipartFile file,
+        @RequestParam("file") MultipartFile file,
         HttpServletRequest request) {
-        
         try {
             Integer idUser = getUserIdFromRequest(request);
             ProfilePhotoResponse updatedPhoto = profilePhotoService.uploadProfilePhoto(idUser, file);
-            
             if (updatedPhoto == null) {
                 Map<String, String> error = new HashMap<>();
                 error.put("message", "Profil pengguna tidak ditemukan");
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
             }
-            
             return ResponseEntity.ok(updatedPhoto);
         } catch (AccessDeniedException e) {
             logger.error("Error otorisasi saat memperbarui foto profil", e);
@@ -206,51 +195,6 @@ public class ProfileController {
             Map<String, String> error = new HashMap<>();
             error.put("message", "Terjadi kesalahan saat memperbarui foto profil pengguna: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
-    }
-    
-    @PostMapping(value = "/photo/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(
-        summary = "Upload foto profil pengguna",
-        description = "Endpoint untuk upload foto profil pengguna yang sedang login"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Foto profil berhasil diupload", 
-                     content = @Content(schema = @Schema(implementation = ProfilePhotoResponse.class))),
-        @ApiResponse(responseCode = "400", description = "Format file tidak valid atau ukuran file terlalu besar"),
-        @ApiResponse(responseCode = "403", description = "Akses ditolak"),
-        @ApiResponse(responseCode = "404", description = "Profil pengguna tidak ditemukan"),
-        @ApiResponse(responseCode = "500", description = "Terjadi kesalahan server")
-    })
-    public ResponseEntity<?> uploadProfilePhoto(
-        @RequestPart("file")
-        @Parameter(
-            description = "File foto profil yang akan diupload (format: JPG, JPEG, PNG, maksimal 5MB)",
-            required = true,
-            content = @Content(mediaType = "multipart/form-data",
-                    schema = @Schema(type = "string", format = "binary"))
-        )
-        MultipartFile file,
-        HttpServletRequest request) {
-        
-        try {
-            Integer idUser = getUserIdFromRequest(request);
-            ProfilePhotoResponse uploadedPhoto = profilePhotoService.uploadProfilePhoto(idUser, file);
-            
-            if (uploadedPhoto == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                     .body(Map.of("message", "Profil pengguna tidak ditemukan"));
-            }
-            
-            return ResponseEntity.ok(uploadedPhoto);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-        } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                                 .body(Map.of("message", "Akses ditolak: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body(Map.of("message", "Terjadi kesalahan saat upload foto profil pengguna: " + e.getMessage()));
         }
     }
     

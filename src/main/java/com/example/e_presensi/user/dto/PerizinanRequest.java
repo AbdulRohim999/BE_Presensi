@@ -1,8 +1,5 @@
 package com.example.e_presensi.user.dto;
 
-// Hapus import yang tidak digunakan
-// import org.springframework.web.multipart.MultipartFile;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -16,14 +13,16 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PerizinanRequest {
     @NotBlank(message = "Jenis perizinan tidak boleh kosong")
-    private String jenisPerizinan;
+    private String jenisIzin;
     
-    @NotBlank(message = "Alasan tidak boleh kosong")
-    private String alasan;
+    @NotBlank(message = "Keterangan tidak boleh kosong")
+    private String keterangan;
     
     @NotNull(message = "Tanggal mulai tidak boleh kosong")
     private String tanggalMulai;
     
     @NotNull(message = "Tanggal selesai tidak boleh kosong")
     private String tanggalSelesai;
+
+    // private MultipartFile lampiran;
 }
