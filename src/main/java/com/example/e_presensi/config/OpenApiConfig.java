@@ -1,7 +1,5 @@
 package com.example.e_presensi.config;
 
-import java.util.List;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,7 +16,11 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI usersMicroserviceOpenAPI() {
         final String securitySchemeName = "bearerAuth";
+        Server httpsServer = new Server()
+            .url("https://epresensi-sttp.up.railway.app")
+            .description("Production Server (HTTPS)");
         return new OpenAPI()
+                .addServersItem(httpsServer)
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(
                         new Components()
@@ -34,13 +36,5 @@ public class OpenApiConfig {
                         .title("E-Presensi API")
                         .description("API Documentation untuk E-Presensi")
                         .version("1.0"));
-    }
-
-    @Bean
-    public OpenAPI customOpenAPI() {
-        Server server = new Server();
-        server.setUrl("https://epresensi-sttp.up.railway.app");
-        server.setDescription("Production Server (HTTPS)");
-        return new OpenAPI().servers(List.of(server));
     }
 }
