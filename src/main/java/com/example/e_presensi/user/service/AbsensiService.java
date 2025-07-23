@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -32,6 +34,9 @@ import com.example.e_presensi.user.dto.LaporanKehadiranUserResponse;
 public class AbsensiService {
 
     private static final Logger logger = LoggerFactory.getLogger(AbsensiService.class);
+    
+    // Definisi zona waktu Indonesia (WIB)
+    private static final ZoneId ZONE_JAKARTA = ZoneId.of("Asia/Jakarta");
 
     // Definisi waktu absensi
     private static final LocalTime PAGI_MULAI = LocalTime.of(7, 30);
@@ -68,8 +73,11 @@ public class AbsensiService {
         }
         
         UserProfile userProfile = userProfileOpt.get();
-        LocalDate hariIni = LocalDate.now();
-        LocalDateTime waktuSekarang = LocalDateTime.now();
+        
+        // Menggunakan zona waktu WIB untuk tanggal dan waktu
+        ZonedDateTime waktuSekarangWIB = ZonedDateTime.now(ZONE_JAKARTA);
+        LocalDate hariIni = waktuSekarangWIB.toLocalDate();
+        LocalDateTime waktuSekarang = waktuSekarangWIB.toLocalDateTime();
         
         // Cari absensi hari ini
         Optional<Absensi> absensiOpt = absensiRepository.findByUserProfileAndTanggal(userProfile, hariIni);
@@ -155,9 +163,10 @@ public class AbsensiService {
     
     private void updateStatusAbsensi(Absensi absensi) {
         // Cek apakah sudah melewati batas waktu absensi (21:00)
-        LocalTime waktuSekarang = LocalTime.now();
+        // Menggunakan zona waktu WIB
+        LocalTime waktuSekarang = ZonedDateTime.now(ZONE_JAKARTA).toLocalTime();
         LocalTime batasWaktuAbsensi = LocalTime.of(21, 0);
-        LocalDate hariIni = LocalDate.now();
+        LocalDate hariIni = ZonedDateTime.now(ZONE_JAKARTA).toLocalDate();
         
         // Jika masih dalam proses absensi (belum jam 21:00) dan belum lengkap, status tetap "Belum Lengkap"
         if (waktuSekarang.isBefore(batasWaktuAbsensi) && hariIni.equals(absensi.getTanggal())) {
@@ -224,7 +233,8 @@ public class AbsensiService {
         }
         
         UserProfile userProfile = userProfileOpt.get();
-        LocalDate hariIni = LocalDate.now();
+        // Menggunakan zona waktu WIB
+        LocalDate hariIni = ZonedDateTime.now(ZONE_JAKARTA).toLocalDate();
         
         Optional<Absensi> absensiOpt = absensiRepository.findByUserProfileAndTanggal(userProfile, hariIni);
         if (!absensiOpt.isPresent()) {
@@ -311,7 +321,8 @@ public class AbsensiService {
     public List<AbsensiResponse> getAllAbsensiHariIni() {
         logger.info("Mengambil semua absensi hari ini");
         
-        LocalDate hariIni = LocalDate.now();
+        // Menggunakan zona waktu WIB
+        LocalDate hariIni = ZonedDateTime.now(ZONE_JAKARTA).toLocalDate();
         List<Absensi> absensiList = absensiRepository.findByTanggal(hariIni);
         
         return absensiList.stream()
@@ -391,7 +402,7 @@ public class AbsensiService {
                         tepatWaktu++;
                     } else if ("Invalid".equals(absensi.getStatus())) {
                         terlambat++;
-                    } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(LocalDate.now())) {
+                    } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(ZonedDateTime.now(ZONE_JAKARTA).toLocalDate())) {
                         tidakMasuk++;
                     }
                     break;
@@ -399,7 +410,7 @@ public class AbsensiService {
             }
             
             // Jika tidak ada absensi untuk hari kerja dan hari tersebut sudah lewat, hitung sebagai tidak masuk
-            if (!found && workDay.isBefore(LocalDate.now())) {
+            if (!found && workDay.isBefore(ZonedDateTime.now(ZONE_JAKARTA).toLocalDate())) {
                 tidakMasuk++;
             }
         }
