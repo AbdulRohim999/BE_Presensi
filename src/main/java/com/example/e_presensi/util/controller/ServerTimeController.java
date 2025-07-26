@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.e_presensi.util.dto.ServerTimeResponse;
+import com.example.e_presensi.util.dto.SimpleTimeResponse;
 import com.example.e_presensi.util.service.ServerTimeService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,5 +60,12 @@ public class ServerTimeController {
                description = "Alias untuk endpoint /wib - mengembalikan waktu server lengkap")
     public ServerTimeResponse getServerNowWIB() {
         return serverTimeService.getFullServerTimeWIB();
+    }
+    
+    @GetMapping("/wib/simple")
+    @Operation(summary = "Mendapatkan waktu dan tanggal server Indonesia WIB (sederhana)", 
+               description = "Mengembalikan hanya waktu dan tanggal server dalam format yang sederhana")
+    public SimpleTimeResponse getSimpleServerTimeWIB() {
+        return serverTimeService.getSimpleServerTimeWIB();
     }
 } 

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.e_presensi.util.DateTimeUtil;
 import com.example.e_presensi.util.dto.ServerTimeResponse;
+import com.example.e_presensi.util.dto.SimpleTimeResponse;
 
 @Service
 public class ServerTimeService {
@@ -92,6 +93,21 @@ public class ServerTimeService {
                 .timezone("Asia/Jakarta")
                 .zoneId("WIB")
                 .timestamp(now.toString())
+                .build();
+    }
+    
+    /**
+     * Mendapatkan waktu dan tanggal server Indonesia WIB (sederhana)
+     */
+    public SimpleTimeResponse getSimpleServerTimeWIB() {
+        LocalDate today = DateTimeUtil.getCurrentDateWIB();
+        LocalTime currentTime = DateTimeUtil.getCurrentTimeWIB();
+        
+        return SimpleTimeResponse.builder()
+                .date(today.format(DATE_FORMATTER))
+                .time(currentTime.format(TIME_FORMATTER))
+                .timezone("Asia/Jakarta")
+                .zoneId("WIB")
                 .build();
     }
 } 
