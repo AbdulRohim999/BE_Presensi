@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SimpleTimeResponse {
     
+    private String day;            // Hari dalam bahasa Indonesia, misal: "Senin"
     private String date;           // Format: "dd MMMM yyyy" (contoh: "15 Desember 2024")
     private String time;           // Format: "HH:mm:ss" (contoh: "14:30:25")
     private String timezone;       // "Asia/Jakarta"

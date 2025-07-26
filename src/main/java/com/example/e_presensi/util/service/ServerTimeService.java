@@ -102,8 +102,10 @@ public class ServerTimeService {
     public SimpleTimeResponse getSimpleServerTimeWIB() {
         LocalDate today = DateTimeUtil.getCurrentDateWIB();
         LocalTime currentTime = DateTimeUtil.getCurrentTimeWIB();
+        String day = today.getDayOfWeek().getDisplayName(java.time.format.TextStyle.FULL, new java.util.Locale("id", "ID"));
         
         return SimpleTimeResponse.builder()
+                .day(day)
                 .date(today.format(DATE_FORMATTER))
                 .time(currentTime.format(TIME_FORMATTER))
                 .timezone("Asia/Jakarta")
