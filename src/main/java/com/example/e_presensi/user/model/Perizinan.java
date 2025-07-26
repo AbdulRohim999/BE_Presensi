@@ -3,6 +3,8 @@ package com.example.e_presensi.user.model;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.example.e_presensi.util.DateTimeUtil;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -58,12 +60,12 @@ public class Perizinan {
     
     @PrePersist
     protected void onCreate() {
-        createAt = LocalDateTime.now();
-        updateAt = LocalDateTime.now();
+        createAt = DateTimeUtil.getCurrentDateTimeWIB();
+        updateAt = DateTimeUtil.getCurrentDateTimeWIB();
     }
     
     @PreUpdate
     protected void onUpdate() {
-        updateAt = LocalDateTime.now();
+        updateAt = DateTimeUtil.getCurrentDateTimeWIB();
     }
 }

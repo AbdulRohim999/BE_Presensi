@@ -1,6 +1,5 @@
 package com.example.e_presensi.admin.service;
 
-import java.time.LocalDateTime;
 import java.util.HashMap; // Import untuk HashMap
 import java.util.List;
 import java.util.Map; // Import untuk Map
@@ -24,6 +23,7 @@ import com.example.e_presensi.login.model.UserProfile;
 import com.example.e_presensi.login.repository.LoginRepository;
 import com.example.e_presensi.login.repository.UserProfileRepository;
 import com.example.e_presensi.login.service.ProfilePhotoService;
+import com.example.e_presensi.util.DateTimeUtil;
 
 @Service
 public class UserManagementService {
@@ -92,18 +92,17 @@ public class UserManagementService {
         userProfile.setTipeUser(request.getTipeUser());
         userProfile.setBidangKerja(request.getBidangKerja());
         userProfile.setStatus(request.getStatus());
-        userProfile.setCreateAt(LocalDateTime.now());
+        userProfile.setCreateAt(DateTimeUtil.getCurrentDateTimeWIB());
         
         UserProfile savedProfile = userProfileRepository.save(userProfile);
         
-        // Buat login baru
+        // Buat data login
         Login login = new Login();
         login.setUsername(request.getUsername());
-        login.setEmail(request.getEmail());
         login.setPassword(passwordEncoder.encode(request.getPassword()));
         login.setRole("user"); // Konsisten dengan UserProfile - lowercase
         login.setUserProfile(savedProfile);
-        login.setCreateAt(LocalDateTime.now());
+        login.setCreateAt(DateTimeUtil.getCurrentDateTimeWIB());
         
         loginRepository.save(login);
         
@@ -240,7 +239,7 @@ public class UserManagementService {
         }
         
         // Update waktu perubahan
-        user.setUpdateAt(LocalDateTime.now());
+        user.setUpdateAt(DateTimeUtil.getCurrentDateTimeWIB());
         
         // Simpan perubahan
         UserProfile updatedUser = userProfileRepository.save(user);

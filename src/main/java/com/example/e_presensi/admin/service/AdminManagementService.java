@@ -1,6 +1,5 @@
 package com.example.e_presensi.admin.service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -13,12 +12,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.e_presensi.admin.dto.AdminCreateRequest;
-import com.example.e_presensi.admin.dto.UserResponse;
 import com.example.e_presensi.admin.dto.AdminUpdateRequest;
+import com.example.e_presensi.admin.dto.UserResponse;
 import com.example.e_presensi.login.model.Login;
 import com.example.e_presensi.login.model.UserProfile;
 import com.example.e_presensi.login.repository.LoginRepository;
 import com.example.e_presensi.login.repository.UserProfileRepository;
+import com.example.e_presensi.util.DateTimeUtil;
 
 @Service
 public class AdminManagementService {
@@ -73,18 +73,17 @@ public class AdminManagementService {
         adminProfile.setLastname(request.getLastname() != null ? request.getLastname() : "");
         adminProfile.setEmail(request.getEmail());
         adminProfile.setRole("admin"); // Set role admin dengan huruf kecil
-        adminProfile.setCreateAt(LocalDateTime.now());
+        adminProfile.setCreateAt(DateTimeUtil.getCurrentDateTimeWIB());
         
         UserProfile savedProfile = userProfileRepository.save(adminProfile);
         
-        // Buat login baru
+        // Buat data login
         Login login = new Login();
         login.setUsername(request.getUsername());
-        login.setEmail(request.getEmail());
         login.setPassword(passwordEncoder.encode(request.getPassword()));
         login.setRole("admin"); // Set role admin dengan huruf kecil
         login.setUserProfile(savedProfile);
-        login.setCreateAt(LocalDateTime.now());
+        login.setCreateAt(DateTimeUtil.getCurrentDateTimeWIB());
         
         loginRepository.save(login);
         
@@ -219,7 +218,7 @@ public class AdminManagementService {
             admin.setStatus(request.getStatus());
         }
         
-        admin.setUpdateAt(LocalDateTime.now());
+        admin.setUpdateAt(DateTimeUtil.getCurrentDateTimeWIB());
         UserProfile updatedAdmin = userProfileRepository.save(admin);
         
         // Update username dan password jika ada

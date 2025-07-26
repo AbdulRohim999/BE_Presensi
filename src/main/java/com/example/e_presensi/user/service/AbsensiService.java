@@ -1,34 +1,34 @@
 package com.example.e_presensi.user.service;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Month;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAdjusters;
+import java.time.temporal.WeekFields;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.e_presensi.login.model.UserProfile;
 import com.example.e_presensi.login.repository.UserProfileRepository;
 import com.example.e_presensi.user.dto.AbsensiRequest;
 import com.example.e_presensi.user.dto.AbsensiResponse;
+import com.example.e_presensi.user.dto.LaporanKehadiranUserResponse;
 import com.example.e_presensi.user.model.Absensi;
 import com.example.e_presensi.user.repository.AbsensiRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import java.time.DayOfWeek;
-import java.time.Month;
-import java.time.temporal.TemporalAdjusters;
-import java.time.temporal.WeekFields;
-import java.util.ArrayList;
-import java.util.Locale;
-import com.example.e_presensi.user.dto.LaporanKehadiranUserResponse;
+import com.example.e_presensi.util.DateTimeUtil;
 
 @Service
 public class AbsensiService {
@@ -75,7 +75,7 @@ public class AbsensiService {
         UserProfile userProfile = userProfileOpt.get();
         
         // Menggunakan zona waktu WIB untuk tanggal dan waktu
-        ZonedDateTime waktuSekarangWIB = ZonedDateTime.now(ZONE_JAKARTA);
+        ZonedDateTime waktuSekarangWIB = DateTimeUtil.getCurrentZonedDateTimeWIB();
         LocalDate hariIni = waktuSekarangWIB.toLocalDate();
         LocalDateTime waktuSekarang = waktuSekarangWIB.toLocalDateTime();
         
@@ -164,9 +164,9 @@ public class AbsensiService {
     private void updateStatusAbsensi(Absensi absensi) {
         // Cek apakah sudah melewati batas waktu absensi (21:00)
         // Menggunakan zona waktu WIB
-        LocalTime waktuSekarang = ZonedDateTime.now(ZONE_JAKARTA).toLocalTime();
+        LocalTime waktuSekarang = DateTimeUtil.getCurrentTimeWIB();
         LocalTime batasWaktuAbsensi = LocalTime.of(21, 0);
-        LocalDate hariIni = ZonedDateTime.now(ZONE_JAKARTA).toLocalDate();
+        LocalDate hariIni = DateTimeUtil.getCurrentDateWIB();
         
         // Jika masih dalam proses absensi (belum jam 21:00) dan belum lengkap, status tetap "Belum Lengkap"
         if (waktuSekarang.isBefore(batasWaktuAbsensi) && hariIni.equals(absensi.getTanggal())) {
@@ -234,7 +234,7 @@ public class AbsensiService {
         
         UserProfile userProfile = userProfileOpt.get();
         // Menggunakan zona waktu WIB
-        LocalDate hariIni = ZonedDateTime.now(ZONE_JAKARTA).toLocalDate();
+        LocalDate hariIni = DateTimeUtil.getCurrentDateWIB();
         
         Optional<Absensi> absensiOpt = absensiRepository.findByUserProfileAndTanggal(userProfile, hariIni);
         if (!absensiOpt.isPresent()) {
@@ -322,7 +322,7 @@ public class AbsensiService {
         logger.info("Mengambil semua absensi hari ini");
         
         // Menggunakan zona waktu WIB
-        LocalDate hariIni = ZonedDateTime.now(ZONE_JAKARTA).toLocalDate();
+        LocalDate hariIni = DateTimeUtil.getCurrentDateWIB();
         List<Absensi> absensiList = absensiRepository.findByTanggal(hariIni);
         
         return absensiList.stream()
@@ -402,7 +402,7 @@ public class AbsensiService {
                         tepatWaktu++;
                     } else if ("Invalid".equals(absensi.getStatus())) {
                         terlambat++;
-                    } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(ZonedDateTime.now(ZONE_JAKARTA).toLocalDate())) {
+                    } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
                         tidakMasuk++;
                     }
                     break;
@@ -410,7 +410,7 @@ public class AbsensiService {
             }
             
             // Jika tidak ada absensi untuk hari kerja dan hari tersebut sudah lewat, hitung sebagai tidak masuk
-            if (!found && workDay.isBefore(ZonedDateTime.now(ZONE_JAKARTA).toLocalDate())) {
+            if (!found && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
                 tidakMasuk++;
             }
         }
@@ -481,7 +481,7 @@ public class AbsensiService {
                         tepatWaktu++;
                     } else if ("Invalid".equals(absensi.getStatus())) {
                         terlambat++;
-                    } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(LocalDate.now())) {
+                    } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
                         tidakMasuk++;
                     }
                     break;
@@ -489,7 +489,7 @@ public class AbsensiService {
             }
             
             // Jika tidak ada absensi untuk hari kerja dan hari tersebut sudah lewat, hitung sebagai tidak masuk
-            if (!found && workDay.isBefore(LocalDate.now())) {
+            if (!found && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
                 tidakMasuk++;
             }
         }

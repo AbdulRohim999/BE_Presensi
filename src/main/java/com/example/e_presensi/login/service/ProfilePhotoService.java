@@ -1,7 +1,5 @@
 package com.example.e_presensi.login.service;
 
-import java.io.InputStream;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,9 +10,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.e_presensi.login.dto.ProfilePhotoResponse;
 import com.example.e_presensi.login.model.UserProfile;
 import com.example.e_presensi.login.repository.UserProfileRepository;
-import com.example.e_presensi.login.dto.ProfilePhotoResponse;
+import com.example.e_presensi.util.DateTimeUtil;
 import com.example.e_presensi.util.MinioUtil;
 
 @Service
@@ -91,7 +90,7 @@ public class ProfilePhotoService {
             
             // Update data user
             userProfile.setFotoProfile(fileName);
-            userProfile.setUpdateAt(LocalDateTime.now());
+            userProfile.setUpdateAt(DateTimeUtil.getCurrentDateTimeWIB());
             
             UserProfile updatedProfile = userProfileRepository.save(userProfile);
             logger.info("Foto profil user dengan ID {} berhasil diperbarui", idUser);
@@ -127,7 +126,7 @@ public class ProfilePhotoService {
                 
                 // Update data user
                 userProfile.setFotoProfile(null);
-                userProfile.setUpdateAt(LocalDateTime.now());
+                userProfile.setUpdateAt(DateTimeUtil.getCurrentDateTimeWIB());
                 userProfileRepository.save(userProfile);
                 
                 logger.info("Foto profil user dengan ID {} berhasil dihapus", idUser);
@@ -151,7 +150,7 @@ public class ProfilePhotoService {
         try {
             // Update data user dengan URL foto yang diberikan
             userProfile.setFotoProfile(fotoProfile);
-            userProfile.setUpdateAt(LocalDateTime.now());
+            userProfile.setUpdateAt(DateTimeUtil.getCurrentDateTimeWIB());
             
             UserProfile updatedProfile = userProfileRepository.save(userProfile);
             logger.info("Foto profil user dengan ID {} berhasil diperbarui dengan URL", idUser);

@@ -27,6 +27,7 @@ import com.example.e_presensi.login.repository.UserProfileRepository;
 import com.example.e_presensi.user.dto.LaporanKehadiranUserResponse;
 import com.example.e_presensi.user.model.Absensi;
 import com.example.e_presensi.user.repository.AbsensiRepository;
+import com.example.e_presensi.util.DateTimeUtil;
 
 @Service
 public class KehadiranService {
@@ -41,7 +42,7 @@ public class KehadiranService {
     
     // Mendapatkan kehadiran user hari ini
     public List<KehadiranUserResponse> getKehadiranUserHariIni() {
-        LocalDate hariIni = LocalDate.now();
+        LocalDate hariIni = DateTimeUtil.getCurrentDateWIB();
         List<Absensi> absensiList = absensiRepository.findByTanggal(hariIni);
         
         return absensiList.stream()
@@ -182,7 +183,7 @@ public class KehadiranService {
                             tepatWaktu++;
                         } else if ("Invalid".equals(absensi.getStatus())) {
                             terlambat++;
-                        } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(LocalDate.now())) {
+                        } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
                             tidakMasuk++;
                         }
                         break;
@@ -190,7 +191,7 @@ public class KehadiranService {
                 }
                 
                 // Jika tidak ada absensi untuk hari kerja dan hari tersebut sudah lewat, hitung sebagai tidak masuk
-                if (!found && workDay.isBefore(LocalDate.now())) {
+                if (!found && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
                     tidakMasuk++;
                 }
             }
@@ -274,7 +275,7 @@ public class KehadiranService {
                             tepatWaktu++;
                         } else if ("Invalid".equals(absensi.getStatus())) {
                             terlambat++;
-                        } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(LocalDate.now())) {
+                        } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
                             tidakMasuk++;
                         }
                         break;
@@ -282,7 +283,7 @@ public class KehadiranService {
                 }
                 
                 // Jika tidak ada absensi untuk hari kerja dan hari tersebut sudah lewat, hitung sebagai tidak masuk
-                if (!found && workDay.isBefore(LocalDate.now())) {
+                if (!found && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
                     tidakMasuk++;
                 }
             }

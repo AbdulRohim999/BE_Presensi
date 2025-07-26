@@ -18,6 +18,7 @@ import com.example.e_presensi.admin.model.Informasi;
 import com.example.e_presensi.admin.repository.InformasiRepository;
 import com.example.e_presensi.login.model.UserProfile;
 import com.example.e_presensi.login.repository.UserProfileRepository;
+import com.example.e_presensi.util.DateTimeUtil;
 
 @Service
 public class InformasiService {
@@ -81,7 +82,7 @@ public class InformasiService {
     public List<InformasiResponse> getActiveInformasi() {
         logger.info("Mengambil informasi yang aktif");
         
-        LocalDate today = LocalDate.now();
+        LocalDate today = DateTimeUtil.getCurrentDateWIB();
         List<Informasi> informasiList = informasiRepository.findActiveInformasi(today);
         return informasiList.stream()
                 .map(this::mapToResponse)
@@ -110,7 +111,7 @@ public class InformasiService {
         
         logger.info("Tipe user dinormalisasi menjadi '{}' untuk user: {}", normalizedTipeUser, username);
         
-        LocalDate today = LocalDate.now();
+        LocalDate today = DateTimeUtil.getCurrentDateWIB();
         
         // Gunakan tipe user yang sudah dinormalisasi untuk query
         List<Informasi> informasiList = informasiRepository.findActiveInformasiByTipeUser(today, normalizedTipeUser);
@@ -150,7 +151,7 @@ public class InformasiService {
     public List<InformasiResponse> getActiveInformasiByTipeUser(String tipeUser) {
         logger.info("Mengambil informasi yang aktif untuk tipe user: {}", tipeUser);
         
-        LocalDate today = LocalDate.now();
+        LocalDate today = DateTimeUtil.getCurrentDateWIB();
         List<Informasi> informasiList = informasiRepository.findActiveInformasiByTipeUser(today, tipeUser.toLowerCase());
         return informasiList.stream()
                 .map(this::mapToResponse)

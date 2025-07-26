@@ -3,6 +3,8 @@ package com.example.e_presensi.admin.model;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.example.e_presensi.util.DateTimeUtil;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -54,6 +56,6 @@ public class Informasi {
     
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        createdAt = DateTimeUtil.getCurrentDateTimeWIB();
     }
 } 

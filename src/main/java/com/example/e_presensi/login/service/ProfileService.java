@@ -1,6 +1,5 @@
 package com.example.e_presensi.login.service;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -16,6 +15,7 @@ import com.example.e_presensi.login.model.Login;
 import com.example.e_presensi.login.model.UserProfile;
 import com.example.e_presensi.login.repository.LoginRepository;
 import com.example.e_presensi.login.repository.UserProfileRepository;
+import com.example.e_presensi.util.DateTimeUtil;
 
 @Service
 public class ProfileService {
@@ -120,7 +120,7 @@ public class ProfileService {
         }
         
         // Update waktu perubahan
-        userProfile.setUpdateAt(LocalDateTime.now());
+        userProfile.setUpdateAt(DateTimeUtil.getCurrentDateTimeWIB());
         
         // Simpan perubahan
         UserProfile updatedProfile = userProfileRepository.save(userProfile);
