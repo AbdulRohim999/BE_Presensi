@@ -328,24 +328,34 @@ public class AbsensiService {
                 ? "Tepat Waktu" : "Terlambat";
         }
         
-        if (absensi.getAbsenSore() != null) {
+        // Cek apakah hari Sabtu atau Minggu
+        DayOfWeek hariAbsensi = absensi.getTanggal().getDayOfWeek();
+        if (hariAbsensi == DayOfWeek.SATURDAY) {
+            statusSore = "Tidak ada absen sore pada hari Sabtu";
+        } else if (hariAbsensi == DayOfWeek.SUNDAY) {
+            statusSore = "Tidak ada absen pada hari Minggu";
+        } else if (absensi.getAbsenSore() != null) {
             LocalTime waktuAbsenSore = absensi.getAbsenSore().toLocalTime();
             statusSore = (waktuAbsenSore.isAfter(SORE_MULAI.minusSeconds(1)) && 
                          waktuAbsenSore.isBefore(SORE_SELESAI.plusSeconds(1))) 
                 ? "Tepat Waktu" : "Terlambat";
         }
         
-        return new AbsensiResponse(
-            absensi.getIdAbsensi(),
-            absensi.getTanggal(),
-            absensi.getAbsenPagi(),
-            statusPagi,
-            absensi.getAbsenSiang(),
-            statusSiang,
-            absensi.getAbsenSore(),
-            statusSore,
-            absensi.getStatus()
-        );
+        AbsensiResponse response = new AbsensiResponse();
+        response.setIdAbsensi(absensi.getIdAbsensi());
+        response.setTanggal(absensi.getTanggal());
+        response.setAbsenPagi(absensi.getAbsenPagi());
+        response.setStatusPagi(statusPagi);
+        response.setAbsenSiang(absensi.getAbsenSiang());
+        response.setStatusSiang(statusSiang);
+        response.setAbsenSore(absensi.getAbsenSore());
+        response.setStatusSore(statusSore);
+        response.setStatus(absensi.getStatus());
+        
+        // Mengisi tanggalFormatted dan hari
+        response.setTanggal(absensi.getTanggal());
+        
+        return response;
     }
     
     public List<AbsensiResponse> getAllAbsensiHariIni() {
@@ -452,7 +462,7 @@ public class AbsensiService {
         }
         
         // Membuat response
-        return LaporanKehadiranUserResponse.builder()
+        LaporanKehadiranUserResponse response = LaporanKehadiranUserResponse.builder()
                 .idUser(userProfile.getId_user())
                 .namaUser(userProfile.getFirstname() + " " + userProfile.getLastname())
                 .bidangKerja(userProfile.getBidangKerja())
@@ -462,6 +472,11 @@ public class AbsensiService {
                 .tidakMasuk(tidakMasuk)
                 .izin(izin)
                 .build();
+        
+        // Mengisi tanggalLaporan dan hariLaporan dengan tanggal saat ini
+        response.setTanggalLaporan(DateTimeUtil.getCurrentDateWIB());
+        
+        return response;
     }
     
     /**
@@ -538,7 +553,7 @@ public class AbsensiService {
         
         // Membuat response
         String namaBulan = Month.of(month).toString();
-        return LaporanKehadiranUserResponse.builder()
+        LaporanKehadiranUserResponse response = LaporanKehadiranUserResponse.builder()
                 .idUser(userProfile.getId_user())
                 .namaUser(userProfile.getFirstname() + " " + userProfile.getLastname())
                 .bidangKerja(userProfile.getBidangKerja())
@@ -548,6 +563,11 @@ public class AbsensiService {
                 .tidakMasuk(tidakMasuk)
                 .izin(izin)
                 .build();
+        
+        // Mengisi tanggalLaporan dan hariLaporan dengan tanggal saat ini
+        response.setTanggalLaporan(DateTimeUtil.getCurrentDateWIB());
+        
+        return response;
     }
 }
 

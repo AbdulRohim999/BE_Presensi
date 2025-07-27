@@ -66,17 +66,21 @@ public class KehadiranService {
         LocalTime waktuAbsenSiang = absensi.getAbsenSiang() != null ? absensi.getAbsenSiang().toLocalTime() : null;
         LocalTime waktuAbsenSore = absensi.getAbsenSore() != null ? absensi.getAbsenSore().toLocalTime() : null;
         
-        return KehadiranUserResponse.builder()
+        KehadiranUserResponse response = KehadiranUserResponse.builder()
                 .idUser(userProfile.getId_user())
                 .namaUser(userProfile.getFirstname() + " " + userProfile.getLastname())
                 .bidangKerja(userProfile.getBidangKerja())
                 .role(userProfile.getRole()) // Menambahkan role dari userProfile
-                .tanggalAbsensi(tanggalAbsensi)
                 .absenPagi(waktuAbsenPagi)
                 .absenSiang(waktuAbsenSiang)
                 .absenSore(waktuAbsenSore)
                 .status(absensi.getStatus())
                 .build();
+        
+        // Mengisi tanggalFormatted dan hari
+        response.setTanggalAbsensi(tanggalAbsensi);
+        
+        return response;
     }
     
     // Mendapatkan kehadiran user berdasarkan ID user
@@ -214,6 +218,9 @@ public class KehadiranService {
                     .izin(izin)
                     .build();
             
+            // Mengisi tanggalLaporan dan hariLaporan dengan tanggal saat ini
+            laporan.setTanggalLaporan(DateTimeUtil.getCurrentDateWIB());
+            
             result.add(laporan);
         }
         
@@ -312,6 +319,9 @@ public class KehadiranService {
                     .tidakMasuk(tidakMasuk)
                     .izin(izin)
                     .build();
+            
+            // Mengisi tanggalLaporan dan hariLaporan dengan tanggal saat ini
+            laporan.setTanggalLaporan(DateTimeUtil.getCurrentDateWIB());
             
             result.add(laporan);
         }
@@ -563,6 +573,9 @@ public class KehadiranService {
                     .totalCount((long) userAbsensi.size())
                     .build();
             
+            // Mengisi tanggalLaporan dan hariLaporan dengan tanggal saat ini
+            userResponse.setTanggalLaporan(DateTimeUtil.getCurrentDateWIB());
+            
             result.add(userResponse);
         }
         
@@ -637,6 +650,9 @@ public class KehadiranService {
                     .invalidCount(invalidCount)
                     .totalCount((long) userAbsensi.size())
                     .build();
+            
+            // Mengisi tanggalLaporan dan hariLaporan dengan tanggal saat ini
+            userResponse.setTanggalLaporan(DateTimeUtil.getCurrentDateWIB());
             
             result.add(userResponse);
         }
