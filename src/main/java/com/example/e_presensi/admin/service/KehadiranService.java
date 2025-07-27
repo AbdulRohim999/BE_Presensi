@@ -217,6 +217,8 @@ public class KehadiranService {
         // Mendapatkan semua absensi dalam rentang tanggal
         List<Absensi> allAbsensi = absensiRepository.findByTanggalBetween(startDate, endDate);
         
+        logger.info("Total absensi ditemukan untuk periode {} sampai {}: {}", startDate, endDate, allAbsensi.size());
+        
         // Mengelompokkan absensi berdasarkan user
         Map<Integer, List<Absensi>> absensiByUser = allAbsensi.stream()
                 .collect(Collectors.groupingBy(a -> a.getUserProfile().getId_user()));
@@ -236,21 +238,66 @@ public class KehadiranService {
             // Mendapatkan absensi user
             List<Absensi> userAbsensi = absensiByUser.getOrDefault(user.getId_user(), new ArrayList<>());
             
+            logger.info("User {} (ID: {}) memiliki {} absensi dalam periode {} sampai {}", 
+                    user.getFirstname() + " " + user.getLastname(), 
+                    user.getId_user(), 
+                    userAbsensi.size(), 
+                    startDate, 
+                    endDate);
+            
+            // Debug: Log setiap absensi dan statusnya
+            for (Absensi absensi : userAbsensi) {
+                logger.info("Absensi tanggal {} untuk user {}: status = {} (raw: '{}')", 
+                        absensi.getTanggal(), 
+                        user.getFirstname() + " " + user.getLastname(), 
+                        absensi.getStatus(),
+                        absensi.getStatus() != null ? absensi.getStatus().trim() : "null");
+            }
+            
             // Menghitung jumlah berdasarkan status dari data absensi yang ada
             int valid = 0;
             int invalid = 0;
             
             // Menghitung berdasarkan data absensi yang ada
             for (Absensi absensi : userAbsensi) {
-                if ("Valid".equalsIgnoreCase(absensi.getStatus())) {
-                    valid++;
-                } else if ("Invalid".equalsIgnoreCase(absensi.getStatus())) {
-                    invalid++;
-                } else if ("Pending".equalsIgnoreCase(absensi.getStatus())) {
-                    // Menggabungkan pending ke invalid
-                    invalid++;
+                String status = absensi.getStatus();
+                if (status != null) {
+                    status = status.trim();
+                    if ("Valid".equalsIgnoreCase(status)) {
+                        valid++;
+                        logger.info("Found Valid absensi for user {} on date {}", 
+                                user.getFirstname() + " " + user.getLastname(), 
+                                absensi.getTanggal());
+                    } else if ("Invalid".equalsIgnoreCase(status)) {
+                        invalid++;
+                        logger.info("Found Invalid absensi for user {} on date {}", 
+                                user.getFirstname() + " " + user.getLastname(), 
+                                absensi.getTanggal());
+                    } else if ("Pending".equalsIgnoreCase(status)) {
+                        // Menggabungkan pending ke invalid
+                        invalid++;
+                        logger.info("Found Pending absensi for user {} on date {} (counted as Invalid)", 
+                                user.getFirstname() + " " + user.getLastname(), 
+                                absensi.getTanggal());
+                    } else {
+                        // Status tidak dikenal, log untuk debug
+                        logger.warn("Unknown status '{}' for user {} on date {}", 
+                                status, 
+                                user.getFirstname() + " " + user.getLastname(), 
+                                absensi.getTanggal());
+                        invalid++; // Default ke invalid
+                    }
+                } else {
+                    logger.warn("Null status for user {} on date {}", 
+                            user.getFirstname() + " " + user.getLastname(), 
+                            absensi.getTanggal());
+                    invalid++; // Default ke invalid
                 }
             }
+            
+            logger.info("User {} - Valid: {}, Invalid: {}, Total: {}", 
+                    user.getFirstname() + " " + user.getLastname(),
+                    valid, invalid, userAbsensi.size());
             
             // Membuat response
             LaporanKehadiranUserResponse laporan = LaporanKehadiranUserResponse.builder()
