@@ -38,11 +38,13 @@ public class KehadiranUserResponse {
             this.hari = tanggalAbsensi.getDayOfWeek().getDisplayName(TextStyle.FULL, new Locale("id", "ID"));
             
             // Set keterangan absen sore berdasarkan hari
-            if (tanggalAbsensi.getDayOfWeek().getValue() == 6) { // Sabtu
+            int dayOfWeek = tanggalAbsensi.getDayOfWeek().getValue();
+            if (dayOfWeek == 6) { // Sabtu
                 this.keteranganAbsenSore = "*"; // Tidak ada absen sore pada hari Sabtu
-            } else if (tanggalAbsensi.getDayOfWeek().getValue() == 7) { // Minggu
+            } else if (dayOfWeek == 7) { // Minggu
                 this.keteranganAbsenSore = "Tidak ada absen pada hari Minggu";
             } else {
+                // Senin-Jumat (1-5)
                 this.keteranganAbsenSore = "Belum absen sore";
             }
         }
