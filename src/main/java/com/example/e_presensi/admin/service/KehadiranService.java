@@ -162,12 +162,12 @@ public class KehadiranService {
             int tidakMasuk = 0;
             int izin = 0; // Jika ada fitur izin
             
-            // Menghitung jumlah hari kerja dalam rentang tanggal (Senin-Jumat)
+            // Menghitung jumlah hari kerja dalam rentang tanggal (Senin-Sabtu)
             List<LocalDate> workDays = new ArrayList<>();
             LocalDate currentDate = startDate;
             while (!currentDate.isAfter(endDate)) {
                 DayOfWeek dayOfWeek = currentDate.getDayOfWeek();
-                if (dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
+                if (dayOfWeek != DayOfWeek.SUNDAY) {
                     workDays.add(currentDate);
                 }
                 currentDate = currentDate.plusDays(1);
@@ -182,9 +182,8 @@ public class KehadiranService {
                 } else if ("Pending".equalsIgnoreCase(absensi.getStatus())) {
                     // Jika masih pending, tidak dihitung sebagai tidak masuk
                     // karena masih dalam proses absensi
-                } else if ("Belum Lengkap".equalsIgnoreCase(absensi.getStatus()) && absensi.getTanggal().isBefore(DateTimeUtil.getCurrentDateWIB())) {
-                    tidakMasuk++;
                 }
+                // Status "Belum Lengkap" sudah tidak digunakan lagi
             }
             
             // Menghitung hari kerja yang tidak ada absensinya
@@ -261,12 +260,12 @@ public class KehadiranService {
             int tidakMasuk = 0;
             int izin = 0; // Jika ada fitur izin
             
-            // Menghitung jumlah hari kerja dalam rentang tanggal (Senin-Jumat)
+            // Menghitung jumlah hari kerja dalam rentang tanggal (Senin-Sabtu)
             List<LocalDate> workDays = new ArrayList<>();
             LocalDate currentDate = startDate;
             while (!currentDate.isAfter(endDate)) {
                 DayOfWeek dayOfWeek = currentDate.getDayOfWeek();
-                if (dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
+                if (dayOfWeek != DayOfWeek.SUNDAY) {
                     workDays.add(currentDate);
                 }
                 currentDate = currentDate.plusDays(1);
@@ -281,9 +280,8 @@ public class KehadiranService {
                 } else if ("Pending".equalsIgnoreCase(absensi.getStatus())) {
                     // Jika masih pending, tidak dihitung sebagai tidak masuk
                     // karena masih dalam proses absensi
-                } else if ("Belum Lengkap".equalsIgnoreCase(absensi.getStatus()) && absensi.getTanggal().isBefore(DateTimeUtil.getCurrentDateWIB())) {
-                    tidakMasuk++;
                 }
+                // Status "Belum Lengkap" sudah tidak digunakan lagi
             }
             
             // Menghitung hari kerja yang tidak ada absensinya
@@ -344,16 +342,11 @@ public class KehadiranService {
                 .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
                 .count();
         
-        long belumLengkapCount = allAbsensi.stream()
-                .filter(a -> "Belum Lengkap".equalsIgnoreCase(a.getStatus()))
-                .count();
-        
         // Membuat response
         Map<String, Long> result = new HashMap<>();
         result.put("valid", validCount);
         result.put("invalid", invalidCount);
         result.put("pending", pendingCount);
-        result.put("belumLengkap", belumLengkapCount);
         result.put("total", (long) allAbsensi.size());
         
         return result;
@@ -385,16 +378,11 @@ public class KehadiranService {
                 .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
                 .count();
         
-        long belumLengkapCount = absensiList.stream()
-                .filter(a -> "Belum Lengkap".equalsIgnoreCase(a.getStatus()))
-                .count();
-        
         // Membuat response
         Map<String, Long> result = new HashMap<>();
         result.put("valid", validCount);
         result.put("invalid", invalidCount);
         result.put("pending", pendingCount);
-        result.put("belumLengkap", belumLengkapCount);
         result.put("total", (long) absensiList.size());
         
         return result;
@@ -416,7 +404,6 @@ public class KehadiranService {
                 "valid", 0L,
                 "invalid", 0L,
                 "pending", 0L,
-                "belumLengkap", 0L,
                 "total", 0L
             );
         }
@@ -437,16 +424,11 @@ public class KehadiranService {
                 .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
                 .count();
         
-        long belumLengkapCount = absensiList.stream()
-                .filter(a -> "Belum Lengkap".equalsIgnoreCase(a.getStatus()))
-                .count();
-        
         // Membuat response
         Map<String, Long> result = new HashMap<>();
         result.put("valid", validCount);
         result.put("invalid", invalidCount);
         result.put("pending", pendingCount);
-        result.put("belumLengkap", belumLengkapCount);
         result.put("total", (long) absensiList.size());
         
         return result;
@@ -471,7 +453,6 @@ public class KehadiranService {
                 "valid", 0L,
                 "invalid", 0L,
                 "pending", 0L,
-                "belumLengkap", 0L,
                 "total", 0L
             );
         }
@@ -492,16 +473,11 @@ public class KehadiranService {
                 .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
                 .count();
         
-        long belumLengkapCount = absensiList.stream()
-                .filter(a -> "Belum Lengkap".equalsIgnoreCase(a.getStatus()))
-                .count();
-        
         // Membuat response
         Map<String, Long> result = new HashMap<>();
         result.put("valid", validCount);
         result.put("invalid", invalidCount);
         result.put("pending", pendingCount);
-        result.put("belumLengkap", belumLengkapCount);
         result.put("total", (long) absensiList.size());
         
         return result;
@@ -568,16 +544,12 @@ public class KehadiranService {
                     .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
                     .count();
             
-            long belumLengkapCount = userAbsensi.stream()
-                    .filter(a -> "Belum Lengkap".equalsIgnoreCase(a.getStatus()))
-                    .count();
+            // Menggabungkan "Pending" ke "Invalid"
+            invalidCount += pendingCount;
             
-            logger.info("User {} - Valid: {}, Invalid: {}, Pending: {}, Belum Lengkap: {}", 
+            logger.info("User {} - Valid: {}, Invalid: {}, Pending: {}", 
                     user.getFirstname() + " " + user.getLastname(),
-                    validCount, invalidCount, pendingCount, belumLengkapCount);
-            
-            // Menggabungkan "Belum Lengkap" dan "Pending" ke "Invalid"
-            invalidCount += belumLengkapCount + pendingCount;
+                    validCount, invalidCount, pendingCount);
             
             // Membuat response untuk user ini
             UserAbsensiStatusResponse userResponse = UserAbsensiStatusResponse.builder()
@@ -647,16 +619,12 @@ public class KehadiranService {
                     .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
                     .count();
             
-            long belumLengkapCount = userAbsensi.stream()
-                    .filter(a -> "Belum Lengkap".equalsIgnoreCase(a.getStatus()))
-                    .count();
+            // Menggabungkan "Pending" ke "Invalid"
+            invalidCount += pendingCount;
             
-            logger.info("User {} - Valid: {}, Invalid: {}, Pending: {}, Belum Lengkap: {}", 
+            logger.info("User {} - Valid: {}, Invalid: {}, Pending: {}", 
                     user.getFirstname() + " " + user.getLastname(),
-                    validCount, invalidCount, pendingCount, belumLengkapCount);
-            
-            // Menggabungkan "Belum Lengkap" dan "Pending" ke "Invalid"
-            invalidCount += belumLengkapCount + pendingCount;
+                    validCount, invalidCount, pendingCount);
             
             // Membuat response untuk user ini
             UserAbsensiStatusResponse userResponse = UserAbsensiStatusResponse.builder()

@@ -91,7 +91,7 @@ public class AbsensiService {
             absensi.setUserProfile(userProfile);
             absensi.setTanggal(hariIni);
             absensi.setCreateAt(waktuSekarang);
-            absensi.setStatus("Belum Lengkap");
+            absensi.setStatus("Pending");
         }
         
         // Update waktu absensi sesuai tipe
@@ -178,15 +178,10 @@ public class AbsensiService {
         if (isSabtu) {
             jumlahAbsensiDiperlukan = 2; // Sabtu: pagi dan siang
         } else if (hariAbsensi == DayOfWeek.SUNDAY) {
-            jumlahAbsensiDiperlukan = 0; // Minggu: tidak ada absensi
+            absensi.setStatus("Invalid"); // Minggu: tidak ada absensi
+            return;
         } else {
             jumlahAbsensiDiperlukan = 3; // Senin-Jumat: pagi, siang, sore
-        }
-        
-        // Jika hari Minggu, langsung set Invalid
-        if (hariAbsensi == DayOfWeek.SUNDAY) {
-            absensi.setStatus("Invalid");
-            return;
         }
         
         // Hitung jumlah absensi yang sudah dilakukan
@@ -198,13 +193,13 @@ public class AbsensiService {
         // Cek apakah semua absensi yang diperlukan sudah dilakukan
         boolean semuaAbsensiDilakukan = jumlahAbsensiDilakukan >= jumlahAbsensiDiperlukan;
         
-        // Jika hari ini dan masih dalam waktu absensi (sebelum jam 21:00) dan belum lengkap
+        // PENDING: Jika hari ini dan waktu absen belum habis, serta absensi belum lengkap
         if (isHariIni && isMasihWaktuAbsensi && !semuaAbsensiDilakukan) {
             absensi.setStatus("Pending");
             return;
         }
         
-        // Jika belum semua absensi dilakukan (setelah jam 21:00 atau bukan hari ini)
+        // INVALID: Jika salah satu absensi tidak dilakukan
         if (!semuaAbsensiDilakukan) {
             absensi.setStatus("Invalid");
             return;
@@ -213,7 +208,7 @@ public class AbsensiService {
         // Cek ketepatan waktu untuk setiap absensi yang diperlukan
         boolean semuaTepatWaktu = true;
         
-        // Cek absen pagi
+        // Cek absen pagi (selalu diperlukan)
         if (absensi.getAbsenPagi() != null) {
             LocalTime waktuAbsenPagi = absensi.getAbsenPagi().toLocalTime();
             boolean pagiTepatWaktu = (waktuAbsenPagi.isAfter(PAGI_MULAI.minusSeconds(1)) && 
@@ -221,12 +216,11 @@ public class AbsensiService {
             if (!pagiTepatWaktu) {
                 semuaTepatWaktu = false;
             }
-        } else if (jumlahAbsensiDiperlukan > 0) {
-            // Jika absen pagi diperlukan tapi tidak ada
+        } else {
             semuaTepatWaktu = false;
         }
         
-        // Cek absen siang
+        // Cek absen siang (selalu diperlukan)
         if (absensi.getAbsenSiang() != null) {
             LocalTime waktuAbsenSiang = absensi.getAbsenSiang().toLocalTime();
             boolean siangTepatWaktu = (waktuAbsenSiang.isAfter(SIANG_MULAI.minusSeconds(1)) && 
@@ -234,25 +228,24 @@ public class AbsensiService {
             if (!siangTepatWaktu) {
                 semuaTepatWaktu = false;
             }
-        } else if (jumlahAbsensiDiperlukan > 1) {
-            // Jika absen siang diperlukan tapi tidak ada
+        } else {
             semuaTepatWaktu = false;
         }
         
         // Cek absen sore (hanya untuk Senin-Jumat)
-        if (absensi.getAbsenSore() != null) {
+        if (!isSabtu && absensi.getAbsenSore() != null) {
             LocalTime waktuAbsenSore = absensi.getAbsenSore().toLocalTime();
             boolean soreTepatWaktu = (waktuAbsenSore.isAfter(SORE_MULAI.minusSeconds(1)) && 
                                      waktuAbsenSore.isBefore(SORE_SELESAI.plusSeconds(1)));
             if (!soreTepatWaktu) {
                 semuaTepatWaktu = false;
             }
-        } else if (jumlahAbsensiDiperlukan > 2) {
-            // Jika absen sore diperlukan tapi tidak ada
+        } else if (!isSabtu) {
+            // Jika bukan Sabtu dan absen sore tidak ada
             semuaTepatWaktu = false;
         }
         
-        // Set status berdasarkan ketepatan waktu
+        // VALID: Jika semua absensi dilakukan dan semuanya tepat waktu
         if (semuaTepatWaktu) {
             absensi.setStatus("Valid");
         } else {
@@ -418,12 +411,12 @@ public class AbsensiService {
         int tidakMasuk = 0;
         int izin = 0; // Jika ada fitur izin
         
-        // Menghitung jumlah hari kerja dalam rentang tanggal (Senin-Jumat)
+        // Menghitung jumlah hari kerja dalam rentang tanggal (Senin-Sabtu)
         List<LocalDate> workDays = new ArrayList<>();
         LocalDate currentDate = startDate;
         while (!currentDate.isAfter(endDate)) {
             DayOfWeek dayOfWeek = currentDate.getDayOfWeek();
-            if (dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
+            if (dayOfWeek != DayOfWeek.SUNDAY) {
                 workDays.add(currentDate);
             }
             currentDate = currentDate.plusDays(1);
@@ -438,9 +431,8 @@ public class AbsensiService {
             } else if ("Pending".equalsIgnoreCase(absensi.getStatus())) {
                 // Jika masih pending, tidak dihitung sebagai tidak masuk
                 // karena masih dalam proses absensi
-            } else if ("Belum Lengkap".equalsIgnoreCase(absensi.getStatus()) && absensi.getTanggal().isBefore(DateTimeUtil.getCurrentDateWIB())) {
-                tidakMasuk++;
             }
+            // Status "Belum Lengkap" sudah tidak digunakan lagi
         }
         
         // Menghitung hari kerja yang tidak ada absensinya
@@ -504,12 +496,12 @@ public class AbsensiService {
         int tidakMasuk = 0;
         int izin = 0; // Jika ada fitur izin
         
-        // Menghitung jumlah hari kerja dalam rentang tanggal (Senin-Jumat)
+        // Menghitung jumlah hari kerja dalam rentang tanggal (Senin-Sabtu)
         List<LocalDate> workDays = new ArrayList<>();
         LocalDate currentDate = startDate;
         while (!currentDate.isAfter(endDate)) {
             DayOfWeek dayOfWeek = currentDate.getDayOfWeek();
-            if (dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
+            if (dayOfWeek != DayOfWeek.SUNDAY) {
                 workDays.add(currentDate);
             }
             currentDate = currentDate.plusDays(1);
@@ -524,9 +516,8 @@ public class AbsensiService {
             } else if ("Pending".equalsIgnoreCase(absensi.getStatus())) {
                 // Jika masih pending, tidak dihitung sebagai tidak masuk
                 // karena masih dalam proses absensi
-            } else if ("Belum Lengkap".equalsIgnoreCase(absensi.getStatus()) && absensi.getTanggal().isBefore(DateTimeUtil.getCurrentDateWIB())) {
-                tidakMasuk++;
             }
+            // Status "Belum Lengkap" sudah tidak digunakan lagi
         }
         
         // Menghitung hari kerja yang tidak ada absensinya
