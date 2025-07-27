@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.e_presensi.admin.dto.KehadiranUserResponse;
+import com.example.e_presensi.admin.dto.StatusAbsensiBulanResponse;
 import com.example.e_presensi.admin.dto.UserAbsensiStatusResponse;
 import com.example.e_presensi.login.model.UserProfile;
 import com.example.e_presensi.login.repository.UserProfileRepository;
@@ -853,27 +854,68 @@ public class KehadiranService {
      * @param year Tahun
      * @return List berisi data absensi dengan status tertentu di bulan yang ditentukan
      */
-    public List<KehadiranUserResponse> getAbsensiByStatusAndMonth(String status, int month, int year) {
+    public List<StatusAbsensiBulanResponse> getAbsensiByStatusAndMonth(String status, int month, int year) {
         logger.info("Mengambil data absensi dengan status '{}' untuk bulan {} tahun {}", status, month, year);
         
         // Menentukan tanggal awal dan akhir bulan
         LocalDate startDate = LocalDate.of(year, month, 1);
         LocalDate endDate = startDate.with(TemporalAdjusters.lastDayOfMonth());
         
+        // Mendapatkan semua user
+        List<UserProfile> allUsers = userProfileRepository.findAll().stream()
+                .filter(user -> "user".equals(user.getRole()))
+                .collect(Collectors.toList());
+        
         // Mendapatkan semua data absensi dalam rentang tanggal
         List<Absensi> allAbsensi = absensiRepository.findByTanggalBetween(startDate, endDate);
         
-        // Filter berdasarkan status (case-insensitive)
-        List<Absensi> filteredAbsensi = allAbsensi.stream()
-                .filter(a -> status.equalsIgnoreCase(a.getStatus()))
-                .collect(Collectors.toList());
+        // Mengelompokkan absensi berdasarkan user
+        Map<Integer, List<Absensi>> absensiByUser = allAbsensi.stream()
+                .collect(Collectors.groupingBy(a -> a.getUserProfile().getId_user()));
         
-        logger.info("Ditemukan {} data absensi dengan status '{}' untuk bulan {} tahun {}", 
-                filteredAbsensi.size(), status, month, year);
+        // Membuat response untuk setiap user
+        List<StatusAbsensiBulanResponse> result = new ArrayList<>();
         
-        // Konversi ke KehadiranUserResponse
-        return filteredAbsensi.stream()
-                .map(this::mapToKehadiranUserResponse)
-                .collect(Collectors.toList());
+        // Mendapatkan nama bulan
+        String namaBulan = Month.of(month).toString();
+        
+        for (UserProfile user : allUsers) {
+            // Filter absensi untuk user ini
+            List<Absensi> userAbsensi = absensiByUser.getOrDefault(user.getId_user(), new ArrayList<>());
+            
+            // Menghitung jumlah berdasarkan status
+            long validCount = userAbsensi.stream()
+                    .filter(a -> "Valid".equalsIgnoreCase(a.getStatus()))
+                    .count();
+            
+            long invalidCount = userAbsensi.stream()
+                    .filter(a -> "Invalid".equalsIgnoreCase(a.getStatus()))
+                    .count();
+            
+            long pendingCount = userAbsensi.stream()
+                    .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
+                    .count();
+            
+            // Menggabungkan pending ke invalid
+            invalidCount += pendingCount;
+            
+            // Membuat response untuk user ini
+            StatusAbsensiBulanResponse userResponse = StatusAbsensiBulanResponse.builder()
+                    .idUser(user.getId_user())
+                    .namaUser(user.getFirstname() + " " + user.getLastname())
+                    .bidangKerja(user.getBidangKerja())
+                    .periode("Bulan " + namaBulan)
+                    .valid((int) validCount)
+                    .invalid((int) invalidCount)
+                    .total((int) userAbsensi.size())
+                    .build();
+            
+            result.add(userResponse);
+        }
+        
+        logger.info("Berhasil membuat response untuk {} user dengan data absensi bulan {} tahun {}", 
+                result.size(), month, year);
+        
+        return result;
     }
 }

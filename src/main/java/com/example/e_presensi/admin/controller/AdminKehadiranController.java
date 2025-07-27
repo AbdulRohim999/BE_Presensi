@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.e_presensi.admin.dto.KehadiranUserResponse;
+import com.example.e_presensi.admin.dto.StatusAbsensiBulanResponse;
 import com.example.e_presensi.admin.dto.UserAbsensiStatusResponse;
 import com.example.e_presensi.admin.service.KehadiranService;
 import com.example.e_presensi.user.dto.LaporanKehadiranUserResponse;
@@ -269,7 +270,7 @@ public class AdminKehadiranController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
-    
+
     @GetMapping("/berdasarkan-status/bulan")
     @Operation(summary = "Mendapatkan data absensi berdasarkan status di bulan tertentu", 
                description = "Endpoint untuk mendapatkan data absensi berdasarkan status (Valid, Invalid, Pending) di bulan yang ditentukan")
@@ -303,16 +304,16 @@ public class AdminKehadiranController {
                 return ResponseEntity.badRequest().body(error);
             }
             
-            List<KehadiranUserResponse> absensiList = kehadiranService.getAbsensiByStatusAndMonth(status, month, year);
+            List<StatusAbsensiBulanResponse> absensiList = kehadiranService.getAbsensiByStatusAndMonth(status, month, year);
             
             if (absensiList.isEmpty()) {
                 Map<String, String> info = new HashMap<>();
-                info.put("message", "Tidak ada data absensi dengan status '" + status + "' untuk bulan " + month + " tahun " + year);
+                info.put("message", "Tidak ada data absensi untuk bulan " + month + " tahun " + year);
                 return ResponseEntity.ok(info);
             }
             
-            logger.info("Berhasil mendapatkan {} data absensi dengan status '{}' untuk bulan {} tahun {}", 
-                    absensiList.size(), status, month, year);
+            logger.info("Berhasil mendapatkan {} data absensi untuk bulan {} tahun {}", 
+                    absensiList.size(), month, year);
             return ResponseEntity.ok(absensiList);
         } catch (Exception e) {
             logger.error("Error saat mendapatkan data absensi berdasarkan status '{}' untuk bulan {} tahun {}", 
