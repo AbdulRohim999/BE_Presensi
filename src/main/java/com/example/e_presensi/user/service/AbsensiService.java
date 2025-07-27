@@ -232,7 +232,7 @@ public class AbsensiService {
             semuaTepatWaktu = false;
         }
         
-        // Cek absen sore (hanya untuk Senin-Jumat)
+        // Cek absen sore (hanya untuk Senin-Jumat, tidak untuk Sabtu)
         if (!isSabtu && absensi.getAbsenSore() != null) {
             LocalTime waktuAbsenSore = absensi.getAbsenSore().toLocalTime();
             boolean soreTepatWaktu = (waktuAbsenSore.isAfter(SORE_MULAI.minusSeconds(1)) && 
@@ -240,10 +240,11 @@ public class AbsensiService {
             if (!soreTepatWaktu) {
                 semuaTepatWaktu = false;
             }
-        } else if (!isSabtu) {
-            // Jika bukan Sabtu dan absen sore tidak ada
+        } else if (!isSabtu && absensi.getAbsenSore() == null) {
+            // Jika bukan Sabtu dan absen sore tidak ada (hanya untuk Senin-Jumat)
             semuaTepatWaktu = false;
         }
+        // Untuk Sabtu, absen sore tidak diperiksa karena tidak diperlukan
         
         // VALID: Jika semua absensi dilakukan dan semuanya tepat waktu
         if (semuaTepatWaktu) {
@@ -317,6 +318,7 @@ public class AbsensiService {
         // Cek apakah hari Sabtu atau Minggu
         DayOfWeek hariAbsensi = absensi.getTanggal().getDayOfWeek();
         boolean isSabtu = hariAbsensi == DayOfWeek.SATURDAY;
+        boolean isMinggu = hariAbsensi == DayOfWeek.SUNDAY;
         
         if (absensi.getAbsenPagi() != null) {
             LocalTime waktuAbsenPagi = absensi.getAbsenPagi().toLocalTime();
@@ -335,7 +337,7 @@ public class AbsensiService {
         // Cek absen sore berdasarkan hari
         if (isSabtu) {
             statusSore = "*"; // Tidak ada absen sore pada hari Sabtu
-        } else if (hariAbsensi == DayOfWeek.SUNDAY) {
+        } else if (isMinggu) {
             statusSore = "Tidak ada absen pada hari Minggu";
         } else if (absensi.getAbsenSore() != null) {
             LocalTime waktuAbsenSore = absensi.getAbsenSore().toLocalTime();
