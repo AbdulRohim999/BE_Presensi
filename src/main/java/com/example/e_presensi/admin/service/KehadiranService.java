@@ -66,6 +66,10 @@ public class KehadiranService {
         LocalTime waktuAbsenSiang = absensi.getAbsenSiang() != null ? absensi.getAbsenSiang().toLocalTime() : null;
         LocalTime waktuAbsenSore = absensi.getAbsenSore() != null ? absensi.getAbsenSore().toLocalTime() : null;
         
+        // Cek apakah hari Sabtu
+        DayOfWeek hariAbsensi = tanggalAbsensi.getDayOfWeek();
+        boolean isSabtu = hariAbsensi == DayOfWeek.SATURDAY;
+        
         KehadiranUserResponse response = KehadiranUserResponse.builder()
                 .idUser(userProfile.getId_user())
                 .namaUser(userProfile.getFirstname() + " " + userProfile.getLastname())
@@ -780,7 +784,7 @@ public class KehadiranService {
             return;
         }
         
-        // INVALID: Jika salah satu absensi tidak dilakukan
+        // INVALID: Jika tidak semua absensi yang diperlukan dilakukan
         if (!semuaAbsensiDilakukan) {
             absensi.setStatus("Invalid");
             return;

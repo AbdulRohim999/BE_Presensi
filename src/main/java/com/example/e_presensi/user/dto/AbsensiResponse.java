@@ -37,7 +37,7 @@ public class AbsensiResponse {
             
             // Set keterangan absen sore berdasarkan hari
             if (tanggal.getDayOfWeek().getValue() == 6) { // Sabtu
-                this.keteranganAbsenSore = "Tidak ada absen sore pada hari Sabtu";
+                this.keteranganAbsenSore = "*"; // Tidak ada absen sore pada hari Sabtu
             } else if (tanggal.getDayOfWeek().getValue() == 7) { // Minggu
                 this.keteranganAbsenSore = "Tidak ada absen pada hari Minggu";
             } else {

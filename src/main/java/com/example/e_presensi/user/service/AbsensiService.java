@@ -199,7 +199,7 @@ public class AbsensiService {
             return;
         }
         
-        // INVALID: Jika salah satu absensi tidak dilakukan
+        // INVALID: Jika tidak semua absensi yang diperlukan dilakukan
         if (!semuaAbsensiDilakukan) {
             absensi.setStatus("Invalid");
             return;
@@ -314,6 +314,10 @@ public class AbsensiService {
         String statusSiang = "Belum Absen";
         String statusSore = "Belum Absen";
         
+        // Cek apakah hari Sabtu atau Minggu
+        DayOfWeek hariAbsensi = absensi.getTanggal().getDayOfWeek();
+        boolean isSabtu = hariAbsensi == DayOfWeek.SATURDAY;
+        
         if (absensi.getAbsenPagi() != null) {
             LocalTime waktuAbsenPagi = absensi.getAbsenPagi().toLocalTime();
             statusPagi = (waktuAbsenPagi.isAfter(PAGI_MULAI.minusSeconds(1)) && 
@@ -328,10 +332,9 @@ public class AbsensiService {
                 ? "Tepat Waktu" : "Terlambat";
         }
         
-        // Cek apakah hari Sabtu atau Minggu
-        DayOfWeek hariAbsensi = absensi.getTanggal().getDayOfWeek();
-        if (hariAbsensi == DayOfWeek.SATURDAY) {
-            statusSore = "Tidak ada absen sore pada hari Sabtu";
+        // Cek absen sore berdasarkan hari
+        if (isSabtu) {
+            statusSore = "*"; // Tidak ada absen sore pada hari Sabtu
         } else if (hariAbsensi == DayOfWeek.SUNDAY) {
             statusSore = "Tidak ada absen pada hari Minggu";
         } else if (absensi.getAbsenSore() != null) {
