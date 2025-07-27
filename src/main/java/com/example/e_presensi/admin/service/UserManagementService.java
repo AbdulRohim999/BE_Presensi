@@ -65,50 +65,81 @@ public class UserManagementService {
     
     @Transactional
     public UserResponse createUser(UserCreateRequest request) {
-        // Validasi input
-        if (request.getEmail() == null || request.getEmail().isEmpty()) {
-            throw new IllegalArgumentException("Email tidak boleh kosong");
+        logger.info("Membuat user baru dengan email: {}", request.getEmail());
+        
+        try {
+            // Validasi input
+            if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
+                throw new IllegalArgumentException("Email tidak boleh kosong");
+            }
+            
+            if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
+                throw new IllegalArgumentException("Password tidak boleh kosong");
+            }
+            
+            if (request.getUsername() == null || request.getUsername().trim().isEmpty()) {
+                throw new IllegalArgumentException("Username tidak boleh kosong");
+            }
+            
+            if (request.getFirstname() == null || request.getFirstname().trim().isEmpty()) {
+                throw new IllegalArgumentException("Firstname tidak boleh kosong");
+            }
+            
+            // Validasi format email
+            if (!request.getEmail().contains("@")) {
+                throw new IllegalArgumentException("Format email tidak valid");
+            }
+            
+            // Cek apakah email sudah terdaftar
+            if (userProfileRepository.existsByEmail(request.getEmail().trim())) {
+                throw new IllegalArgumentException("Email sudah terdaftar");
+            }
+            
+            // Cek apakah username sudah digunakan
+            Optional<Login> existingLogin = loginRepository.findByUsername(request.getUsername().trim());
+            if (existingLogin.isPresent()) {
+                throw new IllegalArgumentException("Username sudah digunakan");
+            }
+            
+            // Buat user profile baru
+            UserProfile userProfile = new UserProfile();
+            userProfile.setFirstname(request.getFirstname().trim());
+            userProfile.setLastname(request.getLastname() != null ? request.getLastname().trim() : "");
+            userProfile.setEmail(request.getEmail().trim());
+            userProfile.setRole("user"); // Default role - lowercase
+            userProfile.setTipeUser(request.getTipeUser() != null ? request.getTipeUser().trim() : "Dosen");
+            userProfile.setBidangKerja(request.getBidangKerja() != null ? request.getBidangKerja().trim() : "");
+            userProfile.setStatus(request.getStatus() != null ? request.getStatus().trim() : "Aktif");
+            userProfile.setCreateAt(DateTimeUtil.getCurrentDateTimeWIB());
+            
+            logger.info("Menyimpan user profile untuk email: {}", userProfile.getEmail());
+            UserProfile savedProfile = userProfileRepository.save(userProfile);
+            logger.info("User profile berhasil disimpan dengan ID: {}", savedProfile.getId_user());
+            
+            // Buat data login
+            Login login = new Login();
+            login.setUsername(request.getUsername().trim());
+            login.setPassword(passwordEncoder.encode(request.getPassword()));
+            login.setRole("user"); // Konsisten dengan UserProfile - lowercase
+            login.setEmail(request.getEmail().trim());
+            login.setUserProfile(savedProfile);
+            login.setCreateAt(DateTimeUtil.getCurrentDateTimeWIB());
+            
+            logger.info("Menyimpan data login untuk username: {}", login.getUsername());
+            loginRepository.save(login);
+            logger.info("Data login berhasil disimpan");
+            
+            logger.info("User baru berhasil dibuat dengan email: {} dan role: {}", request.getEmail(), "user");
+            
+            return mapToUserResponse(savedProfile);
+            
+        } catch (IllegalArgumentException e) {
+            logger.error("Error validasi saat membuat user baru: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error saat membuat user baru: {}", e.getMessage(), e);
+            throw new RuntimeException("Gagal membuat user baru: " + e.getMessage());
         }
-        
-        if (request.getPassword() == null || request.getPassword().isEmpty()) {
-            throw new IllegalArgumentException("Password tidak boleh kosong");
-        }
-        
-        if (request.getUsername() == null || request.getUsername().isEmpty()) {
-            throw new IllegalArgumentException("Username tidak boleh kosong");
-        }
-        
-        // Cek apakah email sudah terdaftar
-        if (userProfileRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email sudah terdaftar");
-        }
-        
-        // Buat user profile baru
-        UserProfile userProfile = new UserProfile();
-        userProfile.setFirstname(request.getFirstname());
-        userProfile.setLastname(request.getLastname());
-        userProfile.setEmail(request.getEmail());
-        userProfile.setRole("user"); // Default role - lowercase
-        userProfile.setTipeUser(request.getTipeUser());
-        userProfile.setBidangKerja(request.getBidangKerja());
-        userProfile.setStatus(request.getStatus());
-        userProfile.setCreateAt(DateTimeUtil.getCurrentDateTimeWIB());
-        
-        UserProfile savedProfile = userProfileRepository.save(userProfile);
-        
-        // Buat data login
-        Login login = new Login();
-        login.setUsername(request.getUsername());
-        login.setPassword(passwordEncoder.encode(request.getPassword()));
-        login.setRole("user"); // Konsisten dengan UserProfile - lowercase
-        login.setUserProfile(savedProfile);
-        login.setCreateAt(DateTimeUtil.getCurrentDateTimeWIB());
-        
-        loginRepository.save(login);
-        
-        logger.info("User baru berhasil dibuat dengan email: {} dan role: {}", request.getEmail(), "user");
-        
-        return mapToUserResponse(savedProfile);
     }
     
     public String getUserPhotoUrl(Integer idUser) {
