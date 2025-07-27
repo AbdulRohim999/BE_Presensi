@@ -431,14 +431,14 @@ public class AbsensiService {
         
         // Menghitung berdasarkan data absensi yang ada
         for (Absensi absensi : userAbsensi) {
-            if ("Valid".equals(absensi.getStatus())) {
+            if ("Valid".equalsIgnoreCase(absensi.getStatus())) {
                 tepatWaktu++;
-            } else if ("Invalid".equals(absensi.getStatus())) {
+            } else if ("Invalid".equalsIgnoreCase(absensi.getStatus())) {
                 terlambat++;
-            } else if ("Pending".equals(absensi.getStatus())) {
+            } else if ("Pending".equalsIgnoreCase(absensi.getStatus())) {
                 // Jika masih pending, tidak dihitung sebagai tidak masuk
                 // karena masih dalam proses absensi
-            } else if ("Belum Lengkap".equals(absensi.getStatus()) && absensi.getTanggal().isBefore(DateTimeUtil.getCurrentDateWIB())) {
+            } else if ("Belum Lengkap".equalsIgnoreCase(absensi.getStatus()) && absensi.getTanggal().isBefore(DateTimeUtil.getCurrentDateWIB())) {
                 tidakMasuk++;
             }
         }
@@ -517,14 +517,14 @@ public class AbsensiService {
         
         // Menghitung berdasarkan data absensi yang ada
         for (Absensi absensi : userAbsensi) {
-            if ("Valid".equals(absensi.getStatus())) {
+            if ("Valid".equalsIgnoreCase(absensi.getStatus())) {
                 tepatWaktu++;
-            } else if ("Invalid".equals(absensi.getStatus())) {
+            } else if ("Invalid".equalsIgnoreCase(absensi.getStatus())) {
                 terlambat++;
-            } else if ("Pending".equals(absensi.getStatus())) {
+            } else if ("Pending".equalsIgnoreCase(absensi.getStatus())) {
                 // Jika masih pending, tidak dihitung sebagai tidak masuk
                 // karena masih dalam proses absensi
-            } else if ("Belum Lengkap".equals(absensi.getStatus()) && absensi.getTanggal().isBefore(DateTimeUtil.getCurrentDateWIB())) {
+            } else if ("Belum Lengkap".equalsIgnoreCase(absensi.getStatus()) && absensi.getTanggal().isBefore(DateTimeUtil.getCurrentDateWIB())) {
                 tidakMasuk++;
             }
         }

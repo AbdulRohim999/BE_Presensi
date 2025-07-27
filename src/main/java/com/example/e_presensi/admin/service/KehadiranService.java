@@ -175,14 +175,14 @@ public class KehadiranService {
             
             // Menghitung berdasarkan data absensi yang ada
             for (Absensi absensi : userAbsensi) {
-                if ("Valid".equals(absensi.getStatus())) {
+                if ("Valid".equalsIgnoreCase(absensi.getStatus())) {
                     tepatWaktu++;
-                } else if ("Invalid".equals(absensi.getStatus())) {
+                } else if ("Invalid".equalsIgnoreCase(absensi.getStatus())) {
                     terlambat++;
-                } else if ("Pending".equals(absensi.getStatus())) {
+                } else if ("Pending".equalsIgnoreCase(absensi.getStatus())) {
                     // Jika masih pending, tidak dihitung sebagai tidak masuk
                     // karena masih dalam proses absensi
-                } else if ("Belum Lengkap".equals(absensi.getStatus()) && absensi.getTanggal().isBefore(DateTimeUtil.getCurrentDateWIB())) {
+                } else if ("Belum Lengkap".equalsIgnoreCase(absensi.getStatus()) && absensi.getTanggal().isBefore(DateTimeUtil.getCurrentDateWIB())) {
                     tidakMasuk++;
                 }
             }
@@ -274,14 +274,14 @@ public class KehadiranService {
             
             // Menghitung berdasarkan data absensi yang ada
             for (Absensi absensi : userAbsensi) {
-                if ("Valid".equals(absensi.getStatus())) {
+                if ("Valid".equalsIgnoreCase(absensi.getStatus())) {
                     tepatWaktu++;
-                } else if ("Invalid".equals(absensi.getStatus())) {
+                } else if ("Invalid".equalsIgnoreCase(absensi.getStatus())) {
                     terlambat++;
-                } else if ("Pending".equals(absensi.getStatus())) {
+                } else if ("Pending".equalsIgnoreCase(absensi.getStatus())) {
                     // Jika masih pending, tidak dihitung sebagai tidak masuk
                     // karena masih dalam proses absensi
-                } else if ("Belum Lengkap".equals(absensi.getStatus()) && absensi.getTanggal().isBefore(DateTimeUtil.getCurrentDateWIB())) {
+                } else if ("Belum Lengkap".equalsIgnoreCase(absensi.getStatus()) && absensi.getTanggal().isBefore(DateTimeUtil.getCurrentDateWIB())) {
                     tidakMasuk++;
                 }
             }
@@ -333,19 +333,19 @@ public class KehadiranService {
         
         // Menghitung jumlah berdasarkan status
         long validCount = allAbsensi.stream()
-                .filter(a -> "Valid".equals(a.getStatus()))
+                .filter(a -> "Valid".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         long invalidCount = allAbsensi.stream()
-                .filter(a -> "Invalid".equals(a.getStatus()))
+                .filter(a -> "Invalid".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         long pendingCount = allAbsensi.stream()
-                .filter(a -> "Pending".equals(a.getStatus()))
+                .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         long belumLengkapCount = allAbsensi.stream()
-                .filter(a -> "Belum Lengkap".equals(a.getStatus()))
+                .filter(a -> "Belum Lengkap".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         // Membuat response
@@ -374,19 +374,19 @@ public class KehadiranService {
         
         // Menghitung jumlah berdasarkan status
         long validCount = absensiList.stream()
-                .filter(a -> "Valid".equals(a.getStatus()))
+                .filter(a -> "Valid".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         long invalidCount = absensiList.stream()
-                .filter(a -> "Invalid".equals(a.getStatus()))
+                .filter(a -> "Invalid".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         long pendingCount = absensiList.stream()
-                .filter(a -> "Pending".equals(a.getStatus()))
+                .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         long belumLengkapCount = absensiList.stream()
-                .filter(a -> "Belum Lengkap".equals(a.getStatus()))
+                .filter(a -> "Belum Lengkap".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         // Membuat response
@@ -426,19 +426,19 @@ public class KehadiranService {
         
         // Menghitung jumlah berdasarkan status
         long validCount = absensiList.stream()
-                .filter(a -> "Valid".equals(a.getStatus()))
+                .filter(a -> "Valid".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         long invalidCount = absensiList.stream()
-                .filter(a -> "Invalid".equals(a.getStatus()))
+                .filter(a -> "Invalid".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         long pendingCount = absensiList.stream()
-                .filter(a -> "Pending".equals(a.getStatus()))
+                .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         long belumLengkapCount = absensiList.stream()
-                .filter(a -> "Belum Lengkap".equals(a.getStatus()))
+                .filter(a -> "Belum Lengkap".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         // Membuat response
@@ -481,19 +481,19 @@ public class KehadiranService {
         
         // Menghitung jumlah berdasarkan status
         long validCount = absensiList.stream()
-                .filter(a -> "Valid".equals(a.getStatus()))
+                .filter(a -> "Valid".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         long invalidCount = absensiList.stream()
-                .filter(a -> "Invalid".equals(a.getStatus()))
+                .filter(a -> "Invalid".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         long pendingCount = absensiList.stream()
-                .filter(a -> "Pending".equals(a.getStatus()))
+                .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         long belumLengkapCount = absensiList.stream()
-                .filter(a -> "Belum Lengkap".equals(a.getStatus()))
+                .filter(a -> "Belum Lengkap".equalsIgnoreCase(a.getStatus()))
                 .count();
         
         // Membuat response
@@ -540,22 +540,41 @@ public class KehadiranService {
                     .filter(a -> a.getUserProfile().getId_user().equals(user.getId_user()))
                     .collect(Collectors.toList());
             
+            logger.info("User {} (ID: {}) memiliki {} absensi dalam periode {} sampai {}", 
+                    user.getFirstname() + " " + user.getLastname(), 
+                    user.getId_user(), 
+                    userAbsensi.size(), 
+                    startDate, 
+                    endDate);
+            
+            // Debug: Log setiap absensi dan statusnya
+            for (Absensi absensi : userAbsensi) {
+                logger.info("Absensi tanggal {} untuk user {}: status = {}", 
+                        absensi.getTanggal(), 
+                        user.getFirstname() + " " + user.getLastname(), 
+                        absensi.getStatus());
+            }
+            
             // Menghitung jumlah berdasarkan status
             long validCount = userAbsensi.stream()
-                    .filter(a -> "Valid".equals(a.getStatus()))
+                    .filter(a -> "Valid".equalsIgnoreCase(a.getStatus()))
                     .count();
             
             long invalidCount = userAbsensi.stream()
-                    .filter(a -> "Invalid".equals(a.getStatus()))
+                    .filter(a -> "Invalid".equalsIgnoreCase(a.getStatus()))
                     .count();
             
             long pendingCount = userAbsensi.stream()
-                    .filter(a -> "Pending".equals(a.getStatus()))
+                    .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
                     .count();
             
             long belumLengkapCount = userAbsensi.stream()
-                    .filter(a -> "Belum Lengkap".equals(a.getStatus()))
+                    .filter(a -> "Belum Lengkap".equalsIgnoreCase(a.getStatus()))
                     .count();
+            
+            logger.info("User {} - Valid: {}, Invalid: {}, Pending: {}, Belum Lengkap: {}", 
+                    user.getFirstname() + " " + user.getLastname(),
+                    validCount, invalidCount, pendingCount, belumLengkapCount);
             
             // Menggabungkan "Belum Lengkap" dan "Pending" ke "Invalid"
             invalidCount += belumLengkapCount + pendingCount;
@@ -602,22 +621,39 @@ public class KehadiranService {
                     .filter(a -> a.getUserProfile().getId_user().equals(user.getId_user()))
                     .collect(Collectors.toList());
             
+            logger.info("User {} (ID: {}) memiliki {} absensi total", 
+                    user.getFirstname() + " " + user.getLastname(), 
+                    user.getId_user(), 
+                    userAbsensi.size());
+            
+            // Debug: Log setiap absensi dan statusnya
+            for (Absensi absensi : userAbsensi) {
+                logger.info("Absensi tanggal {} untuk user {}: status = {}", 
+                        absensi.getTanggal(), 
+                        user.getFirstname() + " " + user.getLastname(), 
+                        absensi.getStatus());
+            }
+            
             // Menghitung jumlah berdasarkan status
             long validCount = userAbsensi.stream()
-                    .filter(a -> "Valid".equals(a.getStatus()))
+                    .filter(a -> "Valid".equalsIgnoreCase(a.getStatus()))
                     .count();
             
             long invalidCount = userAbsensi.stream()
-                    .filter(a -> "Invalid".equals(a.getStatus()))
+                    .filter(a -> "Invalid".equalsIgnoreCase(a.getStatus()))
                     .count();
             
             long pendingCount = userAbsensi.stream()
-                    .filter(a -> "Pending".equals(a.getStatus()))
+                    .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
                     .count();
             
             long belumLengkapCount = userAbsensi.stream()
-                    .filter(a -> "Belum Lengkap".equals(a.getStatus()))
+                    .filter(a -> "Belum Lengkap".equalsIgnoreCase(a.getStatus()))
                     .count();
+            
+            logger.info("User {} - Valid: {}, Invalid: {}, Pending: {}, Belum Lengkap: {}", 
+                    user.getFirstname() + " " + user.getLastname(),
+                    validCount, invalidCount, pendingCount, belumLengkapCount);
             
             // Menggabungkan "Belum Lengkap" dan "Pending" ke "Invalid"
             invalidCount += belumLengkapCount + pendingCount;
