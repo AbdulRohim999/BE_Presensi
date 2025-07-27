@@ -1,11 +1,11 @@
 package com.example.e_presensi.admin.controller;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,18 +16,17 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.e_presensi.admin.dto.KehadiranUserResponse;
 import com.example.e_presensi.admin.dto.UserAbsensiStatusResponse;
 import com.example.e_presensi.admin.service.KehadiranService;
+import com.example.e_presensi.user.dto.LaporanKehadiranUserResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-
-import org.springframework.web.bind.annotation.RequestParam;
-import com.example.e_presensi.user.dto.LaporanKehadiranUserResponse;
 
 @RestController
 @RequestMapping("/api/admin/kehadiran")
@@ -224,6 +223,49 @@ public class AdminKehadiranController {
             logger.error("Error saat mendapatkan jumlah absensi berdasarkan status untuk semua user dalam periode tertentu", e);
             Map<String, String> error = new HashMap<>();
             error.put("message", "Terjadi kesalahan saat mendapatkan jumlah absensi berdasarkan status");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    @GetMapping("/update-status")
+    @Operation(summary = "Memperbarui status absensi yang tidak konsisten", 
+               description = "Endpoint untuk memperbarui status absensi yang mungkin tidak konsisten di database")
+    public ResponseEntity<?> updateAbsensiStatus(
+            @Parameter(description = "Tanggal mulai (format: yyyy-MM-dd)", required = true) 
+            @RequestParam("startDate") String startDateStr,
+            @Parameter(description = "Tanggal selesai (format: yyyy-MM-dd)", required = true) 
+            @RequestParam("endDate") String endDateStr) {
+        
+        try {
+            // Parsing tanggal
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDate startDate = LocalDate.parse(startDateStr, formatter);
+            LocalDate endDate = LocalDate.parse(endDateStr, formatter);
+            
+            // Validasi tanggal
+            if (endDate.isBefore(startDate)) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Tanggal selesai tidak boleh sebelum tanggal mulai");
+                return ResponseEntity.badRequest().body(error);
+            }
+            
+            // Update status absensi
+            kehadiranService.updateAbsensiStatusForPeriod(startDate, endDate);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Status absensi berhasil diperbarui untuk periode " + startDateStr + " sampai " + endDateStr);
+            
+            logger.info("Status absensi berhasil diperbarui untuk periode {} sampai {}", startDateStr, endDateStr);
+            return ResponseEntity.ok(response);
+        } catch (DateTimeParseException e) {
+            logger.error("Error format tanggal tidak valid", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Format tanggal tidak valid. Gunakan format yyyy-MM-dd");
+            return ResponseEntity.badRequest().body(error);
+        } catch (Exception e) {
+            logger.error("Error saat memperbarui status absensi", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Terjadi kesalahan saat memperbarui status absensi");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }

@@ -535,31 +535,56 @@ public class KehadiranService {
             
             // Debug: Log setiap absensi dan statusnya
             for (Absensi absensi : userAbsensi) {
-                logger.info("Absensi tanggal {} untuk user {}: status = {}", 
+                logger.info("Absensi tanggal {} untuk user {}: status = {} (raw: '{}')", 
                         absensi.getTanggal(), 
                         user.getFirstname() + " " + user.getLastname(), 
-                        absensi.getStatus());
+                        absensi.getStatus(),
+                        absensi.getStatus() != null ? absensi.getStatus().trim() : "null");
             }
             
-            // Menghitung jumlah berdasarkan status
+            // Menghitung jumlah berdasarkan status dengan logging detail
             long validCount = userAbsensi.stream()
-                    .filter(a -> "Valid".equalsIgnoreCase(a.getStatus()))
+                    .filter(a -> {
+                        boolean isValid = "Valid".equalsIgnoreCase(a.getStatus());
+                        if (isValid) {
+                            logger.info("Found Valid absensi for user {} on date {}", 
+                                    user.getFirstname() + " " + user.getLastname(), 
+                                    a.getTanggal());
+                        }
+                        return isValid;
+                    })
                     .count();
             
             long invalidCount = userAbsensi.stream()
-                    .filter(a -> "Invalid".equalsIgnoreCase(a.getStatus()))
+                    .filter(a -> {
+                        boolean isInvalid = "Invalid".equalsIgnoreCase(a.getStatus());
+                        if (isInvalid) {
+                            logger.info("Found Invalid absensi for user {} on date {}", 
+                                    user.getFirstname() + " " + user.getLastname(), 
+                                    a.getTanggal());
+                        }
+                        return isInvalid;
+                    })
                     .count();
             
             long pendingCount = userAbsensi.stream()
-                    .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
+                    .filter(a -> {
+                        boolean isPending = "Pending".equalsIgnoreCase(a.getStatus());
+                        if (isPending) {
+                            logger.info("Found Pending absensi for user {} on date {}", 
+                                    user.getFirstname() + " " + user.getLastname(), 
+                                    a.getTanggal());
+                        }
+                        return isPending;
+                    })
                     .count();
             
             // Menggabungkan "Pending" ke "Invalid"
             invalidCount += pendingCount;
             
-            logger.info("User {} - Valid: {}, Invalid: {}, Pending: {}", 
+            logger.info("User {} - Valid: {}, Invalid: {}, Pending: {}, Total: {}", 
                     user.getFirstname() + " " + user.getLastname(),
-                    validCount, invalidCount, pendingCount);
+                    validCount, invalidCount, pendingCount, userAbsensi.size());
             
             // Membuat response untuk user ini
             UserAbsensiStatusResponse userResponse = UserAbsensiStatusResponse.builder()
@@ -613,31 +638,56 @@ public class KehadiranService {
             
             // Debug: Log setiap absensi dan statusnya
             for (Absensi absensi : userAbsensi) {
-                logger.info("Absensi tanggal {} untuk user {}: status = {}", 
+                logger.info("Absensi tanggal {} untuk user {}: status = {} (raw: '{}')", 
                         absensi.getTanggal(), 
                         user.getFirstname() + " " + user.getLastname(), 
-                        absensi.getStatus());
+                        absensi.getStatus(),
+                        absensi.getStatus() != null ? absensi.getStatus().trim() : "null");
             }
             
-            // Menghitung jumlah berdasarkan status
+            // Menghitung jumlah berdasarkan status dengan logging detail
             long validCount = userAbsensi.stream()
-                    .filter(a -> "Valid".equalsIgnoreCase(a.getStatus()))
+                    .filter(a -> {
+                        boolean isValid = "Valid".equalsIgnoreCase(a.getStatus());
+                        if (isValid) {
+                            logger.info("Found Valid absensi for user {} on date {}", 
+                                    user.getFirstname() + " " + user.getLastname(), 
+                                    a.getTanggal());
+                        }
+                        return isValid;
+                    })
                     .count();
             
             long invalidCount = userAbsensi.stream()
-                    .filter(a -> "Invalid".equalsIgnoreCase(a.getStatus()))
+                    .filter(a -> {
+                        boolean isInvalid = "Invalid".equalsIgnoreCase(a.getStatus());
+                        if (isInvalid) {
+                            logger.info("Found Invalid absensi for user {} on date {}", 
+                                    user.getFirstname() + " " + user.getLastname(), 
+                                    a.getTanggal());
+                        }
+                        return isInvalid;
+                    })
                     .count();
             
             long pendingCount = userAbsensi.stream()
-                    .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
+                    .filter(a -> {
+                        boolean isPending = "Pending".equalsIgnoreCase(a.getStatus());
+                        if (isPending) {
+                            logger.info("Found Pending absensi for user {} on date {}", 
+                                    user.getFirstname() + " " + user.getLastname(), 
+                                    a.getTanggal());
+                        }
+                        return isPending;
+                    })
                     .count();
             
             // Menggabungkan "Pending" ke "Invalid"
             invalidCount += pendingCount;
             
-            logger.info("User {} - Valid: {}, Invalid: {}, Pending: {}", 
+            logger.info("User {} - Valid: {}, Invalid: {}, Pending: {}, Total: {}", 
                     user.getFirstname() + " " + user.getLastname(),
-                    validCount, invalidCount, pendingCount);
+                    validCount, invalidCount, pendingCount, userAbsensi.size());
             
             // Membuat response untuk user ini
             UserAbsensiStatusResponse userResponse = UserAbsensiStatusResponse.builder()
@@ -658,5 +708,137 @@ public class KehadiranService {
         }
         
         return result;
+    }
+    
+    /**
+     * Method untuk memperbarui status absensi yang mungkin tidak konsisten
+     * @param startDate Tanggal mulai
+     * @param endDate Tanggal selesai
+     */
+    public void updateAbsensiStatusForPeriod(LocalDate startDate, LocalDate endDate) {
+        logger.info("Memperbarui status absensi untuk periode {} sampai {}", startDate, endDate);
+        
+        List<Absensi> absensiList = absensiRepository.findByTanggalBetween(startDate, endDate);
+        
+        for (Absensi absensi : absensiList) {
+            // Simpan status lama untuk logging
+            String oldStatus = absensi.getStatus();
+            
+            // Update status menggunakan logika yang sama dengan AbsensiService
+            updateStatusAbsensi(absensi);
+            
+            // Jika status berubah, simpan ke database
+            if (!oldStatus.equals(absensi.getStatus())) {
+                logger.info("Status absensi berubah untuk user {} tanggal {}: {} -> {}", 
+                        absensi.getUserProfile().getFirstname() + " " + absensi.getUserProfile().getLastname(),
+                        absensi.getTanggal(),
+                        oldStatus,
+                        absensi.getStatus());
+                absensiRepository.save(absensi);
+            }
+        }
+    }
+    
+    /**
+     * Method untuk memperbarui status absensi (copy dari AbsensiService)
+     */
+    private void updateStatusAbsensi(Absensi absensi) {
+        LocalDate tanggalAbsensi = absensi.getTanggal();
+        LocalDate hariIni = DateTimeUtil.getCurrentDateWIB();
+        LocalTime waktuSekarang = DateTimeUtil.getCurrentTimeWIB();
+        DayOfWeek hariAbsensi = tanggalAbsensi.getDayOfWeek();
+        
+        // Cek apakah hari ini dan masih dalam waktu absensi
+        boolean isHariIni = tanggalAbsensi.equals(hariIni);
+        boolean isMasihWaktuAbsensi = waktuSekarang.isBefore(LocalTime.of(21, 0));
+        
+        // Tentukan jumlah absensi yang diperlukan berdasarkan hari
+        int jumlahAbsensiDiperlukan;
+        boolean isSabtu = hariAbsensi == DayOfWeek.SATURDAY;
+        
+        if (isSabtu) {
+            jumlahAbsensiDiperlukan = 2; // Sabtu: pagi dan siang
+        } else if (hariAbsensi == DayOfWeek.SUNDAY) {
+            absensi.setStatus("Invalid"); // Minggu: tidak ada absensi
+            return;
+        } else {
+            jumlahAbsensiDiperlukan = 3; // Senin-Jumat: pagi, siang, sore
+        }
+        
+        // Hitung jumlah absensi yang sudah dilakukan
+        int jumlahAbsensiDilakukan = 0;
+        if (absensi.getAbsenPagi() != null) jumlahAbsensiDilakukan++;
+        if (absensi.getAbsenSiang() != null) jumlahAbsensiDilakukan++;
+        if (absensi.getAbsenSore() != null) jumlahAbsensiDilakukan++;
+        
+        // Cek apakah semua absensi yang diperlukan sudah dilakukan
+        boolean semuaAbsensiDilakukan = jumlahAbsensiDilakukan >= jumlahAbsensiDiperlukan;
+        
+        // PENDING: Jika hari ini dan waktu absen belum habis, serta absensi belum lengkap
+        if (isHariIni && isMasihWaktuAbsensi && !semuaAbsensiDilakukan) {
+            absensi.setStatus("Pending");
+            return;
+        }
+        
+        // INVALID: Jika salah satu absensi tidak dilakukan
+        if (!semuaAbsensiDilakukan) {
+            absensi.setStatus("Invalid");
+            return;
+        }
+        
+        // Cek ketepatan waktu untuk setiap absensi yang diperlukan
+        boolean semuaTepatWaktu = true;
+        
+        // Definisi waktu absensi (copy dari AbsensiService)
+        LocalTime PAGI_MULAI = LocalTime.of(7, 30);
+        LocalTime PAGI_SELESAI = LocalTime.of(8, 15);
+        LocalTime SIANG_MULAI = LocalTime.of(12, 0);
+        LocalTime SIANG_SELESAI = LocalTime.of(13, 30);
+        LocalTime SORE_MULAI = LocalTime.of(16, 0);
+        LocalTime SORE_SELESAI = LocalTime.of(21, 0);
+        
+        // Cek absen pagi (selalu diperlukan)
+        if (absensi.getAbsenPagi() != null) {
+            LocalTime waktuAbsenPagi = absensi.getAbsenPagi().toLocalTime();
+            boolean pagiTepatWaktu = (waktuAbsenPagi.isAfter(PAGI_MULAI.minusSeconds(1)) && 
+                                     waktuAbsenPagi.isBefore(PAGI_SELESAI.plusSeconds(1)));
+            if (!pagiTepatWaktu) {
+                semuaTepatWaktu = false;
+            }
+        } else {
+            semuaTepatWaktu = false;
+        }
+        
+        // Cek absen siang (selalu diperlukan)
+        if (absensi.getAbsenSiang() != null) {
+            LocalTime waktuAbsenSiang = absensi.getAbsenSiang().toLocalTime();
+            boolean siangTepatWaktu = (waktuAbsenSiang.isAfter(SIANG_MULAI.minusSeconds(1)) && 
+                                      waktuAbsenSiang.isBefore(SIANG_SELESAI.plusSeconds(1)));
+            if (!siangTepatWaktu) {
+                semuaTepatWaktu = false;
+            }
+        } else {
+            semuaTepatWaktu = false;
+        }
+        
+        // Cek absen sore (hanya untuk Senin-Jumat)
+        if (!isSabtu && absensi.getAbsenSore() != null) {
+            LocalTime waktuAbsenSore = absensi.getAbsenSore().toLocalTime();
+            boolean soreTepatWaktu = (waktuAbsenSore.isAfter(SORE_MULAI.minusSeconds(1)) && 
+                                     waktuAbsenSore.isBefore(SORE_SELESAI.plusSeconds(1)));
+            if (!soreTepatWaktu) {
+                semuaTepatWaktu = false;
+            }
+        } else if (!isSabtu) {
+            // Jika bukan Sabtu dan absen sore tidak ada
+            semuaTepatWaktu = false;
+        }
+        
+        // VALID: Jika semua absensi dilakukan dan semuanya tepat waktu
+        if (semuaTepatWaktu) {
+            absensi.setStatus("Valid");
+        } else {
+            absensi.setStatus("Invalid");
+        }
     }
 }
