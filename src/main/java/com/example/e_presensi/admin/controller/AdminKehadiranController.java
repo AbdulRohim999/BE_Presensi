@@ -20,10 +20,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.e_presensi.admin.dto.KehadiranUserResponse;
+import com.example.e_presensi.admin.dto.LaporanKehadiranUserResponse;
 import com.example.e_presensi.admin.dto.StatusAbsensiBulanResponse;
 import com.example.e_presensi.admin.dto.UserAbsensiStatusResponse;
 import com.example.e_presensi.admin.service.KehadiranService;
-import com.example.e_presensi.user.dto.LaporanKehadiranUserResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

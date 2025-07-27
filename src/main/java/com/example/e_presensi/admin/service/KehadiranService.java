@@ -21,11 +21,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.e_presensi.admin.dto.KehadiranUserResponse;
+import com.example.e_presensi.admin.dto.LaporanKehadiranUserResponse;
 import com.example.e_presensi.admin.dto.StatusAbsensiBulanResponse;
 import com.example.e_presensi.admin.dto.UserAbsensiStatusResponse;
 import com.example.e_presensi.login.model.UserProfile;
 import com.example.e_presensi.login.repository.UserProfileRepository;
-import com.example.e_presensi.user.dto.LaporanKehadiranUserResponse;
 import com.example.e_presensi.user.model.Absensi;
 import com.example.e_presensi.user.repository.AbsensiRepository;
 import com.example.e_presensi.util.DateTimeUtil;
@@ -166,48 +166,18 @@ public class KehadiranService {
             List<Absensi> userAbsensi = absensiByUser.getOrDefault(user.getId_user(), new ArrayList<>());
             
             // Menghitung jumlah berdasarkan status dari data absensi yang ada
-            int tepatWaktu = 0;
-            int terlambat = 0;
-            int tidakMasuk = 0;
-            int izin = 0; // Jika ada fitur izin
-            
-            // Menghitung jumlah hari kerja dalam rentang tanggal (Senin-Sabtu)
-            List<LocalDate> workDays = new ArrayList<>();
-            LocalDate currentDate = startDate;
-            while (!currentDate.isAfter(endDate)) {
-                DayOfWeek dayOfWeek = currentDate.getDayOfWeek();
-                if (dayOfWeek != DayOfWeek.SUNDAY) {
-                    workDays.add(currentDate);
-                }
-                currentDate = currentDate.plusDays(1);
-            }
+            int valid = 0;
+            int invalid = 0;
             
             // Menghitung berdasarkan data absensi yang ada
             for (Absensi absensi : userAbsensi) {
                 if ("Valid".equalsIgnoreCase(absensi.getStatus())) {
-                    tepatWaktu++;
+                    valid++;
                 } else if ("Invalid".equalsIgnoreCase(absensi.getStatus())) {
-                    terlambat++;
+                    invalid++;
                 } else if ("Pending".equalsIgnoreCase(absensi.getStatus())) {
-                    // Jika masih pending, tidak dihitung sebagai tidak masuk
-                    // karena masih dalam proses absensi
-                }
-                // Status "Belum Lengkap" sudah tidak digunakan lagi
-            }
-            
-            // Menghitung hari kerja yang tidak ada absensinya
-            for (LocalDate workDay : workDays) {
-                boolean found = false;
-                for (Absensi absensi : userAbsensi) {
-                    if (absensi.getTanggal().equals(workDay)) {
-                        found = true;
-                        break;
-                    }
-                }
-                
-                // Jika tidak ada absensi untuk hari kerja dan hari tersebut sudah lewat, hitung sebagai tidak masuk
-                if (!found && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
-                    tidakMasuk++;
+                    // Menggabungkan pending ke invalid
+                    invalid++;
                 }
             }
             
@@ -217,14 +187,10 @@ public class KehadiranService {
                     .namaUser(user.getFirstname() + " " + user.getLastname())
                     .bidangKerja(user.getBidangKerja())
                     .periode("Minggu ke-" + weekNumber)
-                    .tepatWaktu(tepatWaktu)
-                    .terlambat(terlambat)
-                    .tidakMasuk(tidakMasuk)
-                    .izin(izin)
+                    .valid(valid)
+                    .invalid(invalid)
+                    .total(userAbsensi.size())
                     .build();
-            
-            // Mengisi tanggalLaporan dan hariLaporan dengan tanggal saat ini
-            laporan.setTanggalLaporan(DateTimeUtil.getCurrentDateWIB());
             
             result.add(laporan);
         }
@@ -257,6 +223,10 @@ public class KehadiranService {
         
         // Membuat laporan untuk setiap user
         List<LaporanKehadiranUserResponse> result = new ArrayList<>();
+        
+        // Mendapatkan nama bulan
+        String namaBulan = Month.of(month).toString();
+        
         for (UserProfile user : allUsers) {
             // Skip jika bukan user biasa (admin atau super_admin)
             if (user.getRole() != null && (user.getRole().equals("admin") || user.getRole().equals("super_admin"))) {
@@ -267,66 +237,31 @@ public class KehadiranService {
             List<Absensi> userAbsensi = absensiByUser.getOrDefault(user.getId_user(), new ArrayList<>());
             
             // Menghitung jumlah berdasarkan status dari data absensi yang ada
-            int tepatWaktu = 0;
-            int terlambat = 0;
-            int tidakMasuk = 0;
-            int izin = 0; // Jika ada fitur izin
-            
-            // Menghitung jumlah hari kerja dalam rentang tanggal (Senin-Sabtu)
-            List<LocalDate> workDays = new ArrayList<>();
-            LocalDate currentDate = startDate;
-            while (!currentDate.isAfter(endDate)) {
-                DayOfWeek dayOfWeek = currentDate.getDayOfWeek();
-                if (dayOfWeek != DayOfWeek.SUNDAY) {
-                    workDays.add(currentDate);
-                }
-                currentDate = currentDate.plusDays(1);
-            }
+            int valid = 0;
+            int invalid = 0;
             
             // Menghitung berdasarkan data absensi yang ada
             for (Absensi absensi : userAbsensi) {
                 if ("Valid".equalsIgnoreCase(absensi.getStatus())) {
-                    tepatWaktu++;
+                    valid++;
                 } else if ("Invalid".equalsIgnoreCase(absensi.getStatus())) {
-                    terlambat++;
+                    invalid++;
                 } else if ("Pending".equalsIgnoreCase(absensi.getStatus())) {
-                    // Jika masih pending, tidak dihitung sebagai tidak masuk
-                    // karena masih dalam proses absensi
-                }
-                // Status "Belum Lengkap" sudah tidak digunakan lagi
-            }
-            
-            // Menghitung hari kerja yang tidak ada absensinya
-            for (LocalDate workDay : workDays) {
-                boolean found = false;
-                for (Absensi absensi : userAbsensi) {
-                    if (absensi.getTanggal().equals(workDay)) {
-                        found = true;
-                        break;
-                    }
-                }
-                
-                // Jika tidak ada absensi untuk hari kerja dan hari tersebut sudah lewat, hitung sebagai tidak masuk
-                if (!found && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
-                    tidakMasuk++;
+                    // Menggabungkan pending ke invalid
+                    invalid++;
                 }
             }
             
             // Membuat response
-            String namaBulan = Month.of(month).toString();
             LaporanKehadiranUserResponse laporan = LaporanKehadiranUserResponse.builder()
                     .idUser(user.getId_user())
                     .namaUser(user.getFirstname() + " " + user.getLastname())
                     .bidangKerja(user.getBidangKerja())
                     .periode("Bulan " + namaBulan)
-                    .tepatWaktu(tepatWaktu)
-                    .terlambat(terlambat)
-                    .tidakMasuk(tidakMasuk)
-                    .izin(izin)
+                    .valid(valid)
+                    .invalid(invalid)
+                    .total(userAbsensi.size())
                     .build();
-            
-            // Mengisi tanggalLaporan dan hariLaporan dengan tanggal saat ini
-            laporan.setTanggalLaporan(DateTimeUtil.getCurrentDateWIB());
             
             result.add(laporan);
         }
