@@ -269,4 +269,57 @@ public class AdminKehadiranController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
+    
+    @GetMapping("/berdasarkan-status/bulan")
+    @Operation(summary = "Mendapatkan data absensi berdasarkan status di bulan tertentu", 
+               description = "Endpoint untuk mendapatkan data absensi berdasarkan status (Valid, Invalid, Pending) di bulan yang ditentukan")
+    public ResponseEntity<?> getAbsensiByStatusAndMonth(
+            @Parameter(description = "Status absensi (Valid, Invalid, Pending)", required = true) 
+            @RequestParam("status") String status,
+            @Parameter(description = "Bulan (1-12)", required = true) 
+            @RequestParam("month") Integer month,
+            @Parameter(description = "Tahun", required = true) 
+            @RequestParam("year") Integer year) {
+        
+        try {
+            // Validasi parameter
+            if (month < 1 || month > 12) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Bulan harus antara 1-12");
+                return ResponseEntity.badRequest().body(error);
+            }
+            
+            if (year < 2020 || year > 2030) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Tahun harus antara 2020-2030");
+                return ResponseEntity.badRequest().body(error);
+            }
+            
+            // Validasi status
+            String statusLower = status.toLowerCase();
+            if (!statusLower.equals("valid") && !statusLower.equals("invalid") && !statusLower.equals("pending")) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Status harus Valid, Invalid, atau Pending");
+                return ResponseEntity.badRequest().body(error);
+            }
+            
+            List<KehadiranUserResponse> absensiList = kehadiranService.getAbsensiByStatusAndMonth(status, month, year);
+            
+            if (absensiList.isEmpty()) {
+                Map<String, String> info = new HashMap<>();
+                info.put("message", "Tidak ada data absensi dengan status '" + status + "' untuk bulan " + month + " tahun " + year);
+                return ResponseEntity.ok(info);
+            }
+            
+            logger.info("Berhasil mendapatkan {} data absensi dengan status '{}' untuk bulan {} tahun {}", 
+                    absensiList.size(), status, month, year);
+            return ResponseEntity.ok(absensiList);
+        } catch (Exception e) {
+            logger.error("Error saat mendapatkan data absensi berdasarkan status '{}' untuk bulan {} tahun {}", 
+                    status, month, year, e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Terjadi kesalahan saat mendapatkan data absensi berdasarkan status");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
 }

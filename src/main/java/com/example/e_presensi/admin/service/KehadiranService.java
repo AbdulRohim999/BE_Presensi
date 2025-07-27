@@ -845,4 +845,35 @@ public class KehadiranService {
             absensi.setStatus("Invalid");
         }
     }
+    
+    /**
+     * Mendapatkan data absensi berdasarkan status di bulan tertentu
+     * @param status Status absensi (Valid, Invalid, Pending)
+     * @param month Bulan (1-12)
+     * @param year Tahun
+     * @return List berisi data absensi dengan status tertentu di bulan yang ditentukan
+     */
+    public List<KehadiranUserResponse> getAbsensiByStatusAndMonth(String status, int month, int year) {
+        logger.info("Mengambil data absensi dengan status '{}' untuk bulan {} tahun {}", status, month, year);
+        
+        // Menentukan tanggal awal dan akhir bulan
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.with(TemporalAdjusters.lastDayOfMonth());
+        
+        // Mendapatkan semua data absensi dalam rentang tanggal
+        List<Absensi> allAbsensi = absensiRepository.findByTanggalBetween(startDate, endDate);
+        
+        // Filter berdasarkan status (case-insensitive)
+        List<Absensi> filteredAbsensi = allAbsensi.stream()
+                .filter(a -> status.equalsIgnoreCase(a.getStatus()))
+                .collect(Collectors.toList());
+        
+        logger.info("Ditemukan {} data absensi dengan status '{}' untuk bulan {} tahun {}", 
+                filteredAbsensi.size(), status, month, year);
+        
+        // Konversi ke KehadiranUserResponse
+        return filteredAbsensi.stream()
+                .map(this::mapToKehadiranUserResponse)
+                .collect(Collectors.toList());
+    }
 }
