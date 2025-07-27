@@ -162,65 +162,102 @@ public class AbsensiService {
     }
     
     private void updateStatusAbsensi(Absensi absensi) {
-        // Cek apakah sudah melewati batas waktu absensi (21:00)
-        // Menggunakan zona waktu WIB
-        LocalTime waktuSekarang = DateTimeUtil.getCurrentTimeWIB();
-        LocalTime batasWaktuAbsensi = LocalTime.of(21, 0);
+        LocalDate tanggalAbsensi = absensi.getTanggal();
         LocalDate hariIni = DateTimeUtil.getCurrentDateWIB();
+        LocalTime waktuSekarang = DateTimeUtil.getCurrentTimeWIB();
+        DayOfWeek hariAbsensi = tanggalAbsensi.getDayOfWeek();
         
-        // Jika masih dalam proses absensi (belum jam 21:00) dan belum lengkap, status tetap "Belum Lengkap"
-        if (waktuSekarang.isBefore(batasWaktuAbsensi) && hariIni.equals(absensi.getTanggal())) {
-            // Cek apakah semua absen sudah dilakukan
-            boolean semuaAbsenDilakukan = absensi.getAbsenPagi() != null && 
-                                          absensi.getAbsenSiang() != null && 
-                                          absensi.getAbsenSore() != null;
-            
-            if (!semuaAbsenDilakukan) {
-                // Jika belum semua absen dilakukan dan belum jam 21:00, status masih "Belum Lengkap"
-                absensi.setStatus("Belum Lengkap");
-                return;
-            }
+        // Cek apakah hari ini dan masih dalam waktu absensi
+        boolean isHariIni = tanggalAbsensi.equals(hariIni);
+        boolean isMasihWaktuAbsensi = waktuSekarang.isBefore(LocalTime.of(21, 0));
+        
+        // Tentukan jumlah absensi yang diperlukan berdasarkan hari
+        int jumlahAbsensiDiperlukan;
+        boolean isSabtu = hariAbsensi == DayOfWeek.SATURDAY;
+        
+        if (isSabtu) {
+            jumlahAbsensiDiperlukan = 2; // Sabtu: pagi dan siang
+        } else if (hariAbsensi == DayOfWeek.SUNDAY) {
+            jumlahAbsensiDiperlukan = 0; // Minggu: tidak ada absensi
+        } else {
+            jumlahAbsensiDiperlukan = 3; // Senin-Jumat: pagi, siang, sore
         }
         
-        // Setelah jam 21:00 atau jika semua absen sudah dilakukan, tentukan status final
-        
-        // Cek kelengkapan absensi
-        boolean absensiLengkap = absensi.getAbsenPagi() != null && 
-                                 absensi.getAbsenSiang() != null && 
-                                 absensi.getAbsenSore() != null;
-        
-        // Jika tidak lengkap, langsung set Invalid
-        if (!absensiLengkap) {
+        // Jika hari Minggu, langsung set Invalid
+        if (hariAbsensi == DayOfWeek.SUNDAY) {
             absensi.setStatus("Invalid");
             return;
         }
         
-        // Cek ketepatan waktu untuk setiap absensi
-        boolean pagiTepatWaktu = false;
+        // Hitung jumlah absensi yang sudah dilakukan
+        int jumlahAbsensiDilakukan = 0;
+        if (absensi.getAbsenPagi() != null) jumlahAbsensiDilakukan++;
+        if (absensi.getAbsenSiang() != null) jumlahAbsensiDilakukan++;
+        if (absensi.getAbsenSore() != null) jumlahAbsensiDilakukan++;
+        
+        // Cek apakah semua absensi yang diperlukan sudah dilakukan
+        boolean semuaAbsensiDilakukan = jumlahAbsensiDilakukan >= jumlahAbsensiDiperlukan;
+        
+        // Jika hari ini dan masih dalam waktu absensi (sebelum jam 21:00) dan belum lengkap
+        if (isHariIni && isMasihWaktuAbsensi && !semuaAbsensiDilakukan) {
+            absensi.setStatus("Pending");
+            return;
+        }
+        
+        // Jika belum semua absensi dilakukan (setelah jam 21:00 atau bukan hari ini)
+        if (!semuaAbsensiDilakukan) {
+            absensi.setStatus("Invalid");
+            return;
+        }
+        
+        // Cek ketepatan waktu untuk setiap absensi yang diperlukan
+        boolean semuaTepatWaktu = true;
+        
+        // Cek absen pagi
         if (absensi.getAbsenPagi() != null) {
             LocalTime waktuAbsenPagi = absensi.getAbsenPagi().toLocalTime();
-            pagiTepatWaktu = (waktuAbsenPagi.isAfter(PAGI_MULAI.minusSeconds(1)) && 
-                             waktuAbsenPagi.isBefore(PAGI_SELESAI.plusSeconds(1)));
+            boolean pagiTepatWaktu = (waktuAbsenPagi.isAfter(PAGI_MULAI.minusSeconds(1)) && 
+                                     waktuAbsenPagi.isBefore(PAGI_SELESAI.plusSeconds(1)));
+            if (!pagiTepatWaktu) {
+                semuaTepatWaktu = false;
+            }
+        } else if (jumlahAbsensiDiperlukan > 0) {
+            // Jika absen pagi diperlukan tapi tidak ada
+            semuaTepatWaktu = false;
         }
         
-        boolean siangTepatWaktu = false;
+        // Cek absen siang
         if (absensi.getAbsenSiang() != null) {
             LocalTime waktuAbsenSiang = absensi.getAbsenSiang().toLocalTime();
-            siangTepatWaktu = (waktuAbsenSiang.isAfter(SIANG_MULAI.minusSeconds(1)) && 
-                              waktuAbsenSiang.isBefore(SIANG_SELESAI.plusSeconds(1)));
+            boolean siangTepatWaktu = (waktuAbsenSiang.isAfter(SIANG_MULAI.minusSeconds(1)) && 
+                                      waktuAbsenSiang.isBefore(SIANG_SELESAI.plusSeconds(1)));
+            if (!siangTepatWaktu) {
+                semuaTepatWaktu = false;
+            }
+        } else if (jumlahAbsensiDiperlukan > 1) {
+            // Jika absen siang diperlukan tapi tidak ada
+            semuaTepatWaktu = false;
         }
         
-        boolean soreTepatWaktu = false;
+        // Cek absen sore (hanya untuk Senin-Jumat)
         if (absensi.getAbsenSore() != null) {
             LocalTime waktuAbsenSore = absensi.getAbsenSore().toLocalTime();
-            soreTepatWaktu = (waktuAbsenSore.isAfter(SORE_MULAI.minusSeconds(1)) && 
-                             waktuAbsenSore.isBefore(SORE_SELESAI.plusSeconds(1)));
+            boolean soreTepatWaktu = (waktuAbsenSore.isAfter(SORE_MULAI.minusSeconds(1)) && 
+                                     waktuAbsenSore.isBefore(SORE_SELESAI.plusSeconds(1)));
+            if (!soreTepatWaktu) {
+                semuaTepatWaktu = false;
+            }
+        } else if (jumlahAbsensiDiperlukan > 2) {
+            // Jika absen sore diperlukan tapi tidak ada
+            semuaTepatWaktu = false;
         }
         
-        // Absensi valid jika semua absen tepat waktu dan lengkap
-        boolean valid = pagiTepatWaktu && siangTepatWaktu && soreTepatWaktu;
-        
-        absensi.setStatus(valid ? "Valid" : "Invalid");
+        // Set status berdasarkan ketepatan waktu
+        if (semuaTepatWaktu) {
+            absensi.setStatus("Valid");
+        } else {
+            absensi.setStatus("Invalid");
+        }
     }
     
     public AbsensiResponse getAbsensiHariIni(Integer idUser) {
@@ -402,6 +439,9 @@ public class AbsensiService {
                         tepatWaktu++;
                     } else if ("Invalid".equals(absensi.getStatus())) {
                         terlambat++;
+                    } else if ("Pending".equals(absensi.getStatus())) {
+                        // Jika masih pending, tidak dihitung sebagai tidak masuk
+                        // karena masih dalam proses absensi
                     } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
                         tidakMasuk++;
                     }
@@ -481,6 +521,9 @@ public class AbsensiService {
                         tepatWaktu++;
                     } else if ("Invalid".equals(absensi.getStatus())) {
                         terlambat++;
+                    } else if ("Pending".equals(absensi.getStatus())) {
+                        // Jika masih pending, tidak dihitung sebagai tidak masuk
+                        // karena masih dalam proses absensi
                     } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
                         tidakMasuk++;
                     }

@@ -183,6 +183,9 @@ public class KehadiranService {
                             tepatWaktu++;
                         } else if ("Invalid".equals(absensi.getStatus())) {
                             terlambat++;
+                        } else if ("Pending".equals(absensi.getStatus())) {
+                            // Jika masih pending, tidak dihitung sebagai tidak masuk
+                            // karena masih dalam proses absensi
                         } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
                             tidakMasuk++;
                         }
@@ -275,6 +278,9 @@ public class KehadiranService {
                             tepatWaktu++;
                         } else if ("Invalid".equals(absensi.getStatus())) {
                             terlambat++;
+                        } else if ("Pending".equals(absensi.getStatus())) {
+                            // Jika masih pending, tidak dihitung sebagai tidak masuk
+                            // karena masih dalam proses absensi
                         } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
                             tidakMasuk++;
                         }
@@ -312,7 +318,7 @@ public class KehadiranService {
      * @return Map berisi jumlah absensi berdasarkan status
      */
     public Map<String, Long> getJumlahAbsensiByStatus() {
-        logger.info("Menghitung jumlah absensi berdasarkan status valid dan invalid");
+        logger.info("Menghitung jumlah absensi berdasarkan status valid, invalid, dan pending");
         
         // Mendapatkan semua data absensi
         List<Absensi> allAbsensi = absensiRepository.findAll();
@@ -326,6 +332,10 @@ public class KehadiranService {
                 .filter(a -> "Invalid".equals(a.getStatus()))
                 .count();
         
+        long pendingCount = allAbsensi.stream()
+                .filter(a -> "Pending".equals(a.getStatus()))
+                .count();
+        
         long belumLengkapCount = allAbsensi.stream()
                 .filter(a -> "Belum Lengkap".equals(a.getStatus()))
                 .count();
@@ -334,6 +344,7 @@ public class KehadiranService {
         Map<String, Long> result = new HashMap<>();
         result.put("valid", validCount);
         result.put("invalid", invalidCount);
+        result.put("pending", pendingCount);
         result.put("belumLengkap", belumLengkapCount);
         result.put("total", (long) allAbsensi.size());
         
@@ -347,7 +358,7 @@ public class KehadiranService {
      * @return Map berisi jumlah absensi berdasarkan status
      */
     public Map<String, Long> getJumlahAbsensiByStatusAndPeriode(LocalDate startDate, LocalDate endDate) {
-        logger.info("Menghitung jumlah absensi berdasarkan status valid dan invalid untuk periode {} sampai {}", 
+        logger.info("Menghitung jumlah absensi berdasarkan status valid, invalid, dan pending untuk periode {} sampai {}", 
                 startDate, endDate);
         
         // Mendapatkan data absensi dalam rentang tanggal
@@ -362,6 +373,10 @@ public class KehadiranService {
                 .filter(a -> "Invalid".equals(a.getStatus()))
                 .count();
         
+        long pendingCount = absensiList.stream()
+                .filter(a -> "Pending".equals(a.getStatus()))
+                .count();
+        
         long belumLengkapCount = absensiList.stream()
                 .filter(a -> "Belum Lengkap".equals(a.getStatus()))
                 .count();
@@ -370,6 +385,7 @@ public class KehadiranService {
         Map<String, Long> result = new HashMap<>();
         result.put("valid", validCount);
         result.put("invalid", invalidCount);
+        result.put("pending", pendingCount);
         result.put("belumLengkap", belumLengkapCount);
         result.put("total", (long) absensiList.size());
         
@@ -382,7 +398,7 @@ public class KehadiranService {
      * @return Map berisi jumlah absensi berdasarkan status
      */
     public Map<String, Long> getJumlahAbsensiByStatusAndUserId(Integer idUser) {
-        logger.info("Menghitung jumlah absensi berdasarkan status valid dan invalid untuk user dengan ID {}", idUser);
+        logger.info("Menghitung jumlah absensi berdasarkan status valid, invalid, dan pending untuk user dengan ID {}", idUser);
         
         // Cari user profile
         Optional<UserProfile> userProfileOpt = userProfileRepository.findById(idUser);
@@ -391,6 +407,7 @@ public class KehadiranService {
             return Map.of(
                 "valid", 0L,
                 "invalid", 0L,
+                "pending", 0L,
                 "belumLengkap", 0L,
                 "total", 0L
             );
@@ -408,6 +425,10 @@ public class KehadiranService {
                 .filter(a -> "Invalid".equals(a.getStatus()))
                 .count();
         
+        long pendingCount = absensiList.stream()
+                .filter(a -> "Pending".equals(a.getStatus()))
+                .count();
+        
         long belumLengkapCount = absensiList.stream()
                 .filter(a -> "Belum Lengkap".equals(a.getStatus()))
                 .count();
@@ -416,6 +437,7 @@ public class KehadiranService {
         Map<String, Long> result = new HashMap<>();
         result.put("valid", validCount);
         result.put("invalid", invalidCount);
+        result.put("pending", pendingCount);
         result.put("belumLengkap", belumLengkapCount);
         result.put("total", (long) absensiList.size());
         
@@ -430,7 +452,7 @@ public class KehadiranService {
      * @return Map berisi jumlah absensi berdasarkan status
      */
     public Map<String, Long> getJumlahAbsensiByStatusAndUserIdAndPeriode(Integer idUser, LocalDate startDate, LocalDate endDate) {
-        logger.info("Menghitung jumlah absensi berdasarkan status valid dan invalid untuk user dengan ID {} pada periode {} sampai {}", 
+        logger.info("Menghitung jumlah absensi berdasarkan status valid, invalid, dan pending untuk user dengan ID {} pada periode {} sampai {}", 
                 idUser, startDate, endDate);
         
         // Cari user profile
@@ -440,6 +462,7 @@ public class KehadiranService {
             return Map.of(
                 "valid", 0L,
                 "invalid", 0L,
+                "pending", 0L,
                 "belumLengkap", 0L,
                 "total", 0L
             );
@@ -457,6 +480,10 @@ public class KehadiranService {
                 .filter(a -> "Invalid".equals(a.getStatus()))
                 .count();
         
+        long pendingCount = absensiList.stream()
+                .filter(a -> "Pending".equals(a.getStatus()))
+                .count();
+        
         long belumLengkapCount = absensiList.stream()
                 .filter(a -> "Belum Lengkap".equals(a.getStatus()))
                 .count();
@@ -465,6 +492,7 @@ public class KehadiranService {
         Map<String, Long> result = new HashMap<>();
         result.put("valid", validCount);
         result.put("invalid", invalidCount);
+        result.put("pending", pendingCount);
         result.put("belumLengkap", belumLengkapCount);
         result.put("total", (long) absensiList.size());
         
@@ -513,12 +541,16 @@ public class KehadiranService {
                     .filter(a -> "Invalid".equals(a.getStatus()))
                     .count();
             
+            long pendingCount = userAbsensi.stream()
+                    .filter(a -> "Pending".equals(a.getStatus()))
+                    .count();
+            
             long belumLengkapCount = userAbsensi.stream()
                     .filter(a -> "Belum Lengkap".equals(a.getStatus()))
                     .count();
             
-            // Menggabungkan "Belum Lengkap" ke "Invalid"
-            invalidCount += belumLengkapCount;
+            // Menggabungkan "Belum Lengkap" dan "Pending" ke "Invalid"
+            invalidCount += belumLengkapCount + pendingCount;
             
             // Membuat response untuk user ini
             UserAbsensiStatusResponse userResponse = UserAbsensiStatusResponse.builder()
@@ -571,12 +603,16 @@ public class KehadiranService {
                     .filter(a -> "Invalid".equals(a.getStatus()))
                     .count();
             
+            long pendingCount = userAbsensi.stream()
+                    .filter(a -> "Pending".equals(a.getStatus()))
+                    .count();
+            
             long belumLengkapCount = userAbsensi.stream()
                     .filter(a -> "Belum Lengkap".equals(a.getStatus()))
                     .count();
             
-            // Menggabungkan "Belum Lengkap" ke "Invalid"
-            invalidCount += belumLengkapCount;
+            // Menggabungkan "Belum Lengkap" dan "Pending" ke "Invalid"
+            invalidCount += belumLengkapCount + pendingCount;
             
             // Membuat response untuk user ini
             UserAbsensiStatusResponse userResponse = UserAbsensiStatusResponse.builder()
