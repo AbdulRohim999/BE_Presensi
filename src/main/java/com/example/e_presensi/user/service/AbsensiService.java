@@ -412,7 +412,7 @@ public class AbsensiService {
         // Mendapatkan absensi user dalam rentang tanggal
         List<Absensi> userAbsensi = absensiRepository.findByUserProfileAndDateRange(userProfile, startDate, endDate);
         
-        // Menghitung jumlah berdasarkan status
+        // Menghitung jumlah berdasarkan status dari data absensi yang ada
         int tepatWaktu = 0;
         int terlambat = 0;
         int tidakMasuk = 0;
@@ -429,22 +429,26 @@ public class AbsensiService {
             currentDate = currentDate.plusDays(1);
         }
         
-        // Memeriksa status absensi untuk setiap hari kerja
+        // Menghitung berdasarkan data absensi yang ada
+        for (Absensi absensi : userAbsensi) {
+            if ("Valid".equals(absensi.getStatus())) {
+                tepatWaktu++;
+            } else if ("Invalid".equals(absensi.getStatus())) {
+                terlambat++;
+            } else if ("Pending".equals(absensi.getStatus())) {
+                // Jika masih pending, tidak dihitung sebagai tidak masuk
+                // karena masih dalam proses absensi
+            } else if ("Belum Lengkap".equals(absensi.getStatus()) && absensi.getTanggal().isBefore(DateTimeUtil.getCurrentDateWIB())) {
+                tidakMasuk++;
+            }
+        }
+        
+        // Menghitung hari kerja yang tidak ada absensinya
         for (LocalDate workDay : workDays) {
             boolean found = false;
             for (Absensi absensi : userAbsensi) {
                 if (absensi.getTanggal().equals(workDay)) {
                     found = true;
-                    if ("Valid".equals(absensi.getStatus())) {
-                        tepatWaktu++;
-                    } else if ("Invalid".equals(absensi.getStatus())) {
-                        terlambat++;
-                    } else if ("Pending".equals(absensi.getStatus())) {
-                        // Jika masih pending, tidak dihitung sebagai tidak masuk
-                        // karena masih dalam proses absensi
-                    } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
-                        tidakMasuk++;
-                    }
                     break;
                 }
             }
@@ -494,7 +498,7 @@ public class AbsensiService {
         // Mendapatkan absensi user dalam rentang tanggal
         List<Absensi> userAbsensi = absensiRepository.findByUserProfileAndDateRange(userProfile, startDate, endDate);
         
-        // Menghitung jumlah berdasarkan status
+        // Menghitung jumlah berdasarkan status dari data absensi yang ada
         int tepatWaktu = 0;
         int terlambat = 0;
         int tidakMasuk = 0;
@@ -511,22 +515,26 @@ public class AbsensiService {
             currentDate = currentDate.plusDays(1);
         }
         
-        // Memeriksa status absensi untuk setiap hari kerja
+        // Menghitung berdasarkan data absensi yang ada
+        for (Absensi absensi : userAbsensi) {
+            if ("Valid".equals(absensi.getStatus())) {
+                tepatWaktu++;
+            } else if ("Invalid".equals(absensi.getStatus())) {
+                terlambat++;
+            } else if ("Pending".equals(absensi.getStatus())) {
+                // Jika masih pending, tidak dihitung sebagai tidak masuk
+                // karena masih dalam proses absensi
+            } else if ("Belum Lengkap".equals(absensi.getStatus()) && absensi.getTanggal().isBefore(DateTimeUtil.getCurrentDateWIB())) {
+                tidakMasuk++;
+            }
+        }
+        
+        // Menghitung hari kerja yang tidak ada absensinya
         for (LocalDate workDay : workDays) {
             boolean found = false;
             for (Absensi absensi : userAbsensi) {
                 if (absensi.getTanggal().equals(workDay)) {
                     found = true;
-                    if ("Valid".equals(absensi.getStatus())) {
-                        tepatWaktu++;
-                    } else if ("Invalid".equals(absensi.getStatus())) {
-                        terlambat++;
-                    } else if ("Pending".equals(absensi.getStatus())) {
-                        // Jika masih pending, tidak dihitung sebagai tidak masuk
-                        // karena masih dalam proses absensi
-                    } else if ("Belum Lengkap".equals(absensi.getStatus()) && workDay.isBefore(DateTimeUtil.getCurrentDateWIB())) {
-                        tidakMasuk++;
-                    }
                     break;
                 }
             }
