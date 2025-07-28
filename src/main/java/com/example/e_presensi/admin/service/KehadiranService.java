@@ -2,7 +2,6 @@ package com.example.e_presensi.admin.service;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
 import java.time.temporal.TemporalAdjusters;
@@ -508,16 +507,10 @@ public class KehadiranService {
                 .collect(Collectors.toList());
         
         // Mendapatkan semua data absensi dalam rentang tanggal
-        LocalDateTime startDateTime = startDate.atStartOfDay();
-        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
-        
         List<Absensi> allAbsensi = absensiRepository.findByTanggalBetween(startDate, endDate);
         
         // Membuat response untuk setiap user
         List<UserAbsensiStatusResponse> result = new ArrayList<>();
-        
-        // Mendapatkan nama bulan untuk periode
-        String periodeName = "Periode " + startDate.toString() + " s/d " + endDate.toString();
         
         for (UserProfile user : allUsers) {
             // Filter absensi untuk user ini
@@ -591,21 +584,17 @@ public class KehadiranService {
                     .namaUser(user.getFirstname() + " " + user.getLastname())
                     .tipeUser(user.getTipeUser())
                     .bidangKerja(user.getBidangKerja())
-                    .role(user.getRole()) // Menambahkan role
                     .validCount(validCount)
                     .invalidCount(invalidCount)
-                    .totalCount((long) userAbsensi.size())
+                    .totalCount(validCount + invalidCount) // Total = Valid + Invalid (termasuk Pending)
                     .build();
-            
-            // Mengisi tanggalLaporan dan hariLaporan dengan tanggal saat ini
-            userResponse.setTanggalLaporan(DateTimeUtil.getCurrentDateWIB());
             
             result.add(userResponse);
         }
         
         return result;
     }
-
+    
     /**
      * Mendapatkan jumlah absensi berdasarkan status valid dan invalid untuk semua user
      * @return List berisi informasi user dan jumlah absensi berdasarkan status
@@ -694,14 +683,10 @@ public class KehadiranService {
                     .namaUser(user.getFirstname() + " " + user.getLastname())
                     .tipeUser(user.getTipeUser())
                     .bidangKerja(user.getBidangKerja())
-                    .role(user.getRole()) // Menambahkan role
                     .validCount(validCount)
                     .invalidCount(invalidCount)
                     .totalCount((long) userAbsensi.size())
                     .build();
-            
-            // Mengisi tanggalLaporan dan hariLaporan dengan tanggal saat ini
-            userResponse.setTanggalLaporan(DateTimeUtil.getCurrentDateWIB());
             
             result.add(userResponse);
         }
