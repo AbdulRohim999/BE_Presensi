@@ -200,7 +200,7 @@ public class KehadiranService {
                     .periode("Minggu ke-" + weekNumber)
                     .valid(valid)
                     .invalid(invalid)
-                    .total(userAbsensi.size())
+                    .total(valid + invalid) // Total = Valid + Invalid (termasuk Pending)
                     .build();
             
             result.add(laporan);
@@ -308,7 +308,7 @@ public class KehadiranService {
             
             logger.info("User {} - Valid: {}, Invalid: {}, Total: {}", 
                     user.getFirstname() + " " + user.getLastname(),
-                    valid, invalid, userAbsensi.size());
+                    valid, invalid, valid + invalid);
             
             // Membuat response
             LaporanKehadiranUserResponse laporan = LaporanKehadiranUserResponse.builder()
@@ -318,7 +318,7 @@ public class KehadiranService {
                     .periode("Bulan " + namaBulan)
                     .valid(valid)
                     .invalid(invalid)
-                    .total(userAbsensi.size())
+                    .total(valid + invalid) // Total = Valid + Invalid (termasuk Pending)
                     .build();
             
             result.add(laporan);
@@ -527,11 +527,17 @@ public class KehadiranService {
             
             // Debug: Log setiap absensi dan statusnya
             for (Absensi absensi : userAbsensi) {
-                logger.info("Absensi tanggal {} untuk user {}: status = {} (raw: '{}')", 
-                        absensi.getTanggal(), 
+                logger.info("Absensi tanggal {} ({}) untuk user {}: status = {} (raw: '{}')", 
+                        absensi.getTanggal(),
+                        absensi.getTanggal().getDayOfWeek(),
                         user.getFirstname() + " " + user.getLastname(), 
                         absensi.getStatus(),
                         absensi.getStatus() != null ? absensi.getStatus().trim() : "null");
+                
+                // Log detail absensi untuk debugging
+                logger.info("  - Absen Pagi: {}", absensi.getAbsenPagi());
+                logger.info("  - Absen Siang: {}", absensi.getAbsenSiang());
+                logger.info("  - Absen Sore: {}", absensi.getAbsenSore());
             }
             
             // Menghitung jumlah berdasarkan status dengan logging detail
@@ -703,7 +709,9 @@ public class KehadiranService {
         logger.info("Memperbarui status absensi untuk periode {} sampai {}", startDate, endDate);
         
         List<Absensi> absensiList = absensiRepository.findByTanggalBetween(startDate, endDate);
+        logger.info("Ditemukan {} absensi untuk diperbarui", absensiList.size());
         
+        int updatedCount = 0;
         for (Absensi absensi : absensiList) {
             // Simpan status lama untuk logging
             String oldStatus = absensi.getStatus();
@@ -713,14 +721,18 @@ public class KehadiranService {
             
             // Jika status berubah, simpan ke database
             if (!oldStatus.equals(absensi.getStatus())) {
-                logger.info("Status absensi berubah untuk user {} tanggal {}: {} -> {}", 
+                logger.info("Status absensi berubah untuk user {} tanggal {} ({}): {} -> {}", 
                         absensi.getUserProfile().getFirstname() + " " + absensi.getUserProfile().getLastname(),
                         absensi.getTanggal(),
+                        absensi.getTanggal().getDayOfWeek(),
                         oldStatus,
                         absensi.getStatus());
                 absensiRepository.save(absensi);
+                updatedCount++;
             }
         }
+        
+        logger.info("Berhasil memperbarui {} status absensi", updatedCount);
     }
     
     /**
