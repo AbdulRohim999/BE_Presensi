@@ -400,7 +400,6 @@ public class InformasiController {
     // ==================== RUNNING TEXT (TARGET: SEMUA USER) ====================
     
     @GetMapping("/user/informasi/running-text/semua")
-    @PreAuthorize("hasAuthority('user')")
     @Operation(summary = "Running text aktif untuk semua user", description = "Mengambil daftar informasi aktif dengan target 'semua' untuk ditampilkan sebagai running text.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Berhasil mendapatkan running text aktif (target: semua)"),
