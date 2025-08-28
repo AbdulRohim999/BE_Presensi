@@ -98,7 +98,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                path.contains("/swagger-ui") ||
                path.contains("/v3/api-docs") ||
                path.contains("/swagger-resources") ||
-               path.contains("/webjars");
+               path.contains("/webjars") ||
+               // Public running text endpoints
+               path.equals("/api/running-text") ||
+               path.startsWith("/api/running-text/") ||
+               path.equals("/api/user/informasi/running-text/semua");
     }
     
     private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
