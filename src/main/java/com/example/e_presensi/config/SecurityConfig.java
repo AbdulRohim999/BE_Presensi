@@ -45,8 +45,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**", "/v3/api-docs.yaml").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
-                // Running text public endpoint
+                // Running text public endpoints
                 .requestMatchers("/api/user/informasi/running-text/semua").permitAll()
+                .requestMatchers("/api/running-text").permitAll()
                 .requestMatchers("/api/user/profile/**").hasAnyAuthority("user", "admin", "super_admin")
                 .requestMatchers("/api/user/perizinan/**").hasAuthority("user")
                 .requestMatchers("/api/user/absensi/**").hasAnyAuthority("user", "admin")

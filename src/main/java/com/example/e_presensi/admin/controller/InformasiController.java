@@ -396,30 +396,6 @@ public class InformasiController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
-
-    // ==================== RUNNING TEXT (TARGET: SEMUA USER) ====================
-    
-    @GetMapping("/user/informasi/running-text/semua")
-    @Operation(summary = "Running text aktif untuk semua user", description = "Mengambil daftar informasi aktif dengan target 'semua' untuk ditampilkan sebagai running text.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Berhasil mendapatkan running text aktif (target: semua)"),
-        @ApiResponse(responseCode = "403", description = "Akses ditolak - hanya untuk user"),
-        @ApiResponse(responseCode = "500", description = "Terjadi kesalahan server")
-    })
-    public ResponseEntity<?> getRunningTextSemuaUser() {
-        logger.info("=== MULAI: Mendapatkan running text aktif (target: semua) ===");
-        try {
-            List<InformasiResponse> informasiList = informasiService.getActiveInformasiByTipeUser("semua");
-            logger.info("Berhasil mendapatkan {} running text aktif (target: semua)", informasiList.size());
-            logger.info("=== SELESAI: Mendapatkan running text aktif (target: semua) ===");
-            return ResponseEntity.ok(informasiList);
-        } catch (Exception e) {
-            logger.error("Error saat mendapatkan running text aktif (target: semua)", e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Terjadi kesalahan saat mendapatkan running text");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
-    }
     
     // Helper method untuk mendapatkan nama user yang sedang login
     private String getCurrentUserName() {
